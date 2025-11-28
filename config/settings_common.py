@@ -20,6 +20,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'task_management.apps.TaskManagementConfig',
+    'accounts.apps.AccountsConfig',
+
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'django-bootstrap5',
 ]
 
 MIDDLEWARE = [
@@ -99,7 +106,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICKFIELDS_DIRS = [
+STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
@@ -107,3 +114,11 @@ STATICKFIELDS_DIRS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+AUTH_USER_MODEL = 'accounts.CustomUser'
+SITE_ID = 1
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+LOGIN_REDIRECT_URL = 'task_management:index'
+ACCOUNT_LOGOUT_REDIRECT_URL = 'accounts:login'
