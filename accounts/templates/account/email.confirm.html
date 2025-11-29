@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+
+{% block title %}Sign-up Confirmation|ASCENSION{% endblock title %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container">
+    <div class="my-div-style">
+        <div>
+            <h1 class="mb-5">Email address confirmation</h1>
+        </div>
+        {% if confirmation %}
+            <p class="mb-5">To complete your user registration, please press the button below.</p>
+            <form action="{% url 'account_confirm_email' confirmation.key %}" method="POST">
+                {% csrf_token %}
+
+                <button class="btn btn-primary mb-5" type="submit">CONFIRM</button>
+            </form>
+        {% else %}
+            <p>The link has expired.</p><br>
+            <a href="{% url 'account_email' %}">REAPPLICATION</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
