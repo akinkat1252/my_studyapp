@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Interst Cateogies|ASCENSION{% endblock title %}
+{% block body_class %}white-page{% endblock  %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="my-div-style">
+        <div>
+            <h1 class="mb-4">{{ user.username }}'s Interest Categories</h1>
+        </div>
+        <div>
+            <ul>
+                {% for ic in interest_categories %}
+                    <div class='d-flex mb-4'>
+                        <a href="#">
+                            <li>{{ ic.category.name }}</li>
+                        </a>
+                        <a href="{% url 'task_management:interest_category_delete' ic.pk %}" class='btn btn-sm'>: delete</a><br>
+                    </div>
+                {% empty %}
+                    <p>There are no interest categories registered.</p>
+                {% endfor %}
+                <div class='d-flex gap-2 mb-5'>
+                    <a href="{% url 'task_management:interest_category_add' %}" class='btn btn-primary'>ADD</a>
+                </div>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock content %}
