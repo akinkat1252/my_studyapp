@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'django_bootstrap5',
+    'crispy_forms',
+    'crispy_bootstrap5',
 ]
 
 MIDDLEWARE = [
@@ -139,3 +141,7 @@ ACCOUNT_LOGOUT_REDIRECT_URL = 'account_login'
 
 DEFAULT_FROM_EMAIL = os.getenv('FROM_EMAIL', 'webmaster@localhost')
 
+
+# Crispy Forms Settings
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"

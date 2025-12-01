@@ -14,7 +14,7 @@
             <div class="col-lg-8 align-self-baseline">
                 <p class="text-white-75 mb-5"></p>
                 {% if user.is_authenticated %}
-                    <a class="btn btn-primary btn-xl" href="#">HOME</a><br>
+                    <a class="btn btn-primary btn-xl" href="{% url 'task_management:interest_category_list' %}">HOME</a><br>
                 {% else %}     
                     <a class="btn btn-primary btn-xl mb-2" href="{% url "account_login" %}">LogIn</a><br>
                     <a href="{% url "account_signup" %}">Don't have an account yet?</a>

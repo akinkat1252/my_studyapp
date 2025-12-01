@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Delete Interest Category | My-Studyapp{% endblock title %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="my-div-style">
+        <div>
+            <h1>Delete Interest Category</h1>
+            <p>Are you sure you want to delete <strong>"{{ object.category.name }}"</strong>?</p>
+            <div class="alert alert-danger" role="alert">
+                <strong>Warning: </strong>Deleting this category will also delete all related learning goals, topics, and study sessions. This action cannot be undone.
+            </div><br>
+        </div>
+        <form action="" method='POST'>
+            {% csrf_token %}
+            <div class='d-flex gap-2'>
+                <button type="submit" class="btn btn-danger mb-5">Delete</button>
+                <a href="{% url 'task_management:interest_category_list' %}" class="btn btn-secondary mb-5">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}
