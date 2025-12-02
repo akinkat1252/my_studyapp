@@ -8,22 +8,22 @@
 <div class="container mt-5">
     <div class="my-div-style">
         <div>
-            <h1 class="mb-4">{{ user.username }}'s Interest Categories</h1>
+            <h1 class="mb-4">{{ interest_category.name }} - Learning Goals</h1>
         </div>
         <div>
             <ul>
-                {% for ic in interest_categories %}
+                {% for goal in learning_goals %}
                     <div class='d-flex mb-4'>
-                        <a href="{% url 'task_management:learning_goal_list' ic.id %}" class=''>
-                            <li>{{ ic.category.name }}</li>
+                        <a href="#" class=''>
+                            <li>{{ goal.title }}</li>
                         </a>
-                        <a href="{% url 'task_management:interest_category_delete' ic.pk %}" class='btn btn-sm'>: delete</a><br>
+                        <a href="#" class='btn btn-sm'>: delete</a><br>
                     </div>
                 {% empty %}
-                    <p>There are no interest categories registered.</p>
+                    <p>There are no learning goals registered.</p>
                 {% endfor %}
                 <div class='d-flex gap-2 mb-5'>
-                    <a href="{% url 'task_management:interest_category_add' %}" class='btn btn-primary'>ADD</a>
+                    <a href="#" class='btn btn-primary'>CREATE</a>
                 </div>
             </ul>
         </div>

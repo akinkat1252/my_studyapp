@@ -54,6 +54,11 @@ class DraftLearningGoal(models.Model):
         on_delete=models.CASCADE,
         related_name='draft_learning_goals'
     )
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        related_name='draft_learning_goals'
+    )
     title = models.CharField(max_length=200)
     current_level = models.TextField(blank=True)
     target_level = models.TextField(blank=True)
@@ -80,7 +85,7 @@ class LearningGoal(models.Model):
         on_delete=models.CASCADE,
         related_name='learning_goals'
     )
-    Category = models.ForeignKey(
+    category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
         blank=True,

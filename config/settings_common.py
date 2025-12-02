@@ -21,6 +21,7 @@ INSTALLED_APPS = [
 
     'task_management.apps.TaskManagementConfig',
     'accounts.apps.AccountsConfig',
+    'ai_support.apps.AiSupportConfig',
 
     'django.contrib.sites',
     'allauth',
