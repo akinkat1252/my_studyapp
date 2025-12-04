@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Preview generated topic|ASCENSION{% endblock title %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="my-div-style">
+        <div>
+            <h1 class="mb-4">Preview Generated LearningTopic</h1>
+            <h2>&lt; Title:{{ draft.title }} ~Category:{{ draft.category.name }}~ &gt;</h2>
+            <p>Learning tasks have been generated based on the learning goals you set.</p>
+            <p>Uncheck the topics you don't need.</p>
+        </div>
+        <form action="{% url 'task_management:learning_goal_finalize' draft.id %}" method="post">
+            {% csrf_token %}
+
+            {% for main in generated_topics.main_topics %}
+                <div class="d-flex align-items-center">
+                    <input type="checkbox" name="main_topics" value="{{ main.title }}" checked>
+                    <h3 class="ms-2 mb-0">{{ main.title }}</h3>
+                </div>
+
+                <ul>
+                    {% for sub in main.sub_topics %}
+                        <li>
+                            <input type="checkbox" name="{{ main.title }}_sub_topics" value="{{ sub.title }}" checked>
+                            <span class=''>{{ sub.title }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% empty %}
+                <p>Failed to generate learning plan. Please try again from setting learning goals.</p>
+                <a href="{% url 'task_management:learning_goal_set' user_interest.id %}" class='btn btn-primary mb-5'>Start over</a>
+                <a href="{% url 'task_management:learning_goal_list' user_interest.id %}" class='btn btn-secondary mb-5'>Cancel</a>
+            {% endfor %}
+            <div class="d-flex gap-3">
+                <button class="btn btn-primary mb-4">Confirm</button>
+                <button class="btn btn-secondary mb-4">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}

@@ -32,18 +32,18 @@ class AddInterestCategoryForm(forms.ModelForm):
 
 
 # Form for creating a new learning goal draft.
-class LearningGoalCreateForm(forms.ModelForm):
+class LearningGoalSetForm(forms.ModelForm):
     class Meta:
         model = DraftLearningGoal
         fields = ['title', 'current_level', 'target_level', 'description']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'current_level': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
-            'target_level': forms.TextInput(attrs={'class': 'form-control', 'rows': 4}),
+            'target_level': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         }
         labels = {
-            'title': 'Learning Goal Title *',
+            'title': 'Title',
             'current_level': 'Current Level (optional)',
             'target_level': 'Target Level (optional)',
             'description': 'Description (optional)',
@@ -55,7 +55,7 @@ class LearningGoalCreateForm(forms.ModelForm):
         self.helper.form_method = 'post'
         self.helper.layout = Layout(
             Fieldset(
-                'Create Learning Goal',
+                'Set Learning Goal',
                 Field(
                     'title',
                     css_class='form-control',

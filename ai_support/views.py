@@ -21,4 +21,4 @@ def learning_topic_generate_view(request, draft_id):
     draft.raw_generated_data = parsed_json
     draft.save()
 
-    return redirect("task_management:goal_preview", draft_id=draft.id)
+    return redirect("task_management:topic_preview", draft_id=draft.id)

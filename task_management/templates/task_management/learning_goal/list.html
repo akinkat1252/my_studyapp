@@ -13,17 +13,17 @@
         <div>
             <ul>
                 {% for goal in learning_goals %}
-                    <div class='d-flex mb-4'>
-                        <a href="#" class=''>
+                    <div class="d-flex mb-4">
+                        <a href="{% url "task_management:learning_goal_detail" goal.id %}" class=''>
                             <li>{{ goal.title }}</li>
                         </a>
-                        <a href="#" class='btn btn-sm'>: delete</a><br>
+                        <a href="{% url 'task_management:learning_goal_delete' goal.id %}" class="btn btn-sm">: delete</a><br>
                     </div>
                 {% empty %}
                     <p>There are no learning goals registered.</p>
                 {% endfor %}
-                <div class='d-flex gap-2 mb-5'>
-                    <a href="#" class='btn btn-primary'>CREATE</a>
+                <div class="d-flex gap-2 mb-5">
+                    <a href="{% url 'task_management:learning_goal_set' user_interest.id %}" class="btn btn-primary">CREATE</a>
                 </div>
             </ul>
         </div>
