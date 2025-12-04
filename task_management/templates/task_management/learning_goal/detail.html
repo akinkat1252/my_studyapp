@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}LearningGoal Detail | My-Studyapp{% endblock title %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container">
+    <div class="my-div-style">
+        <!-- LearningGoal Data -->
+        <div>
+            <h1 class="mb-4"><strong>Title: </strong>{{ learning_goal.title }}</h1>
+            <div class="d-flex gap-3">
+                <p><strong>Target Level: </strong>{{ learning_goal.target_level }}</p>
+                <p>/</p>
+                <p><strong>Total Study Time: </strong>{{ learning_goal.actual_study_time }}h</p>
+            </div>
+            <br>
+        </div>
+
+        <!-- Dismissible explanatory message -->
+        <div class="alert alert-secondary alert-dismissible fade show py-2" role="alert" style="font-size: 0.85em;">
+            <div>
+                <p class="mb-0">Tap the <button class='btn btn-sm btn-primary'>Lecture</button> button to take any course you haven't taken yet.</p>
+                <p>Tap a topic name lets you take a course on that topic.</p><hr>
+                <p class="mb-0">&lt; Button Guide &gt;</p>
+                <p class="mb-1">
+                    <button class="btn btn-sm btn-success">MCQ</button>=Multiple Choice Quiz/
+                    <button class="btn btn-sm btn-warning">WT</button>=Written Task
+                </p>
+                <p class="mb-0"><button class="btn btn-sm btn-info">CT</button>=Comprehensive Test (All topics)</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Topic List -->
+        <div class="d-flex align-items-center gap-4">
+            <h2> &lt; Learning Topics &gt;</h2>
+            <a href="#" class="btn btn-sm btn-primary">Lecture</a>
+            <a href="#" class="btn btn-sm btn-info">CT</a>
+        </div>
+        {% for main in main_topics %}
+            <hr>
+            <div class="d-flex align-items-center gap-4">
+                <h3>・{{ main.title }}</h3>
+                <a href="#" class="btn btn-sm btn-success">MCQ</a>
+                <a href="#" class="btn btn-sm btn-warning">WT</a>
+            </div>
+                {% if main.sub_topics.all %}
+                    <ul>
+                        {% for sub in main.sub_topics.all %}
+                            <hr>
+                            <li class="d-flex align-items-center gap-4">
+                                <a href="#">・{{ sub.title }}/</a>
+                                <a href="#" class="btn btn-sm btn-success">MCQ</a>
+                                <a href="#" class="btn btn-sm btn-warning">WT</a>
+                            </li>                     
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>No Sub topics.</p>
+                {% endif %}
+        {% endfor %}
+        <hr><br>
+
+    </div>
+</div>
+{% endblock content %}

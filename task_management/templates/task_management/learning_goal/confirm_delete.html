@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Delete LearningGoal | My_studyapp{% endblock title %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container">
+    <div class="my-div-style">
+        <div>
+            <h1>Delete Learning Goal</h1>
+            <p>Are you sure you want to delete <strong>"{{ object.title }}"</strong>?</p>
+            <div class="alert alert-danger" role="alert">
+                <strong>Warning: </strong>Deleting this learning goal will also delete all associated learning data. This action cannot be undone.
+            </div><br>
+        </div>
+        <form action="" method="post">
+            {% csrf_token %}
+
+            <button type="submit" class='btn btn-danger mb-5'>Delete</button>
+            <a href="{% url 'task_management:learning_goal_list' user_interest.id %}" class='btn btn-secondary mb-5'>Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock content %}

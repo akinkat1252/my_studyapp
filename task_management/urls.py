@@ -9,5 +9,9 @@ urlpatterns = [
     path('interest-categories/add/', views.InterestCategoryCreateView.as_view(), name='interest_category_add'),
     path('interest-categories/<int:pk>/delete/', views.InterestCategoryDeleteView.as_view(), name='interest_category_delete'),
     path('learning-goals/<int:interest_id>', views.LearningGoalListView.as_view(), name='learning_goal_list'),
-    path('learning-goals/<int:interest_id>/create/', views.LearningGoalCreateView.as_view(), name='learning_goal_create'),
+    path('learning-goals/<int:interest_id>/set/', views.LearningGoalSetView.as_view(), name='learning_goal_set'),
+    path('learning-goals/draft/<int:draft_id>/preview/', views.LearningTopicPreviewView.as_view(), name='topic_preview'),
+    path('learning-goals/draft/<int:draft_id>/finalize/', views.LearningGoalFinalizeView.as_view(), name='learning_goal_finalize'),
+    path('learning-goals/<int:goal_id>/detail/', views.LearningGoalDetailView.as_view(), name='learning_goal_detail'),
+    path('learning-goals/<int:goal_id>/delete/', views.LearningGoalDeleteView.as_view(), name='learning_goal_delete'),
 ]
