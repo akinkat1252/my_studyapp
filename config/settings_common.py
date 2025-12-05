@@ -22,6 +22,8 @@ INSTALLED_APPS = [
     'task_management.apps.TaskManagementConfig',
     'accounts.apps.AccountsConfig',
     'ai_support.apps.AiSupportConfig',
+    'lecture.apps.LectureConfig',
+    'exam.apps.ExamConfig',
 
     'django.contrib.sites',
     'allauth',
