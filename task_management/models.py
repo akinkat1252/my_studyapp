@@ -111,6 +111,14 @@ class LearningGoal(models.Model):
         verbose_name = 'Learning Goal'
         verbose_name_plural = 'Learning Goals'
 
+    # Obtain the total study time for each learning goal
+    @property
+    def actual_study_time(self):
+        return (
+            self.study_sessions
+            .aggregate(total=models.Sum('time_spent'))['total'] or 0
+        )
+
     def __str__(self):
         return f'LearningGoal: {self.title} by {self.user.username}'
 

@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'ai_support.apps.AiSupportConfig',
     'lecture.apps.LectureConfig',
     'exam.apps.ExamConfig',
+    'learning_records.apps.LearningRecordsConfig',
 
     'django.contrib.sites',
     'allauth',
