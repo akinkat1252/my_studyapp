@@ -2,6 +2,7 @@ import os
 from openai import OpenAI
 
 
+
 _client = None
 
 def get_ai_client() -> OpenAI:

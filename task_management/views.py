@@ -259,4 +259,3 @@ class LearningGoalDeleteView(LoginRequiredMixin, generic.DeleteView):
             category=interest_category,
         )
         return reverse_lazy('task_management:learning_goal_list', kwargs={'interest_id': user_interest.id})
-

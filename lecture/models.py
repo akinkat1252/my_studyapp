@@ -13,11 +13,22 @@ class LectureSession(models.Model):
         on_delete=models.CASCADE,
         related_name='lecture_sessions',
     )
-    lecture_count = models.PositiveIntegerField(default=0)
+    lecture_number = models.PositiveIntegerField()
     summary = models.TextField(blank=True)
-    total_count = models.PositiveBigIntegerField(default=0)
+    total_tokens = models.PositiveBigIntegerField(default=0)
     started_at = models.DateTimeField(auto_now_add=True)
     ended = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Lecture Session"
+        verbose_name_plural = "Lecture Sessions"
+        ordering = ["lecture_number"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "sub_topic", "lecture_number"],
+                name="unique_lecture_number_per_topic",
+            ),
+        ]
 
     def __str__(self):
         return f'Lecture Session: {self.user.username} - {self.sub_topic.title}'
@@ -27,7 +38,7 @@ class LectureLog(models.Model):
     ROLE_CHOICES = [
         ('ai', 'AI'),
         ('user', 'USER'),
-        ('master', 'MASTER'),
+        ('system', 'SYSTEM'),
     ]
 
     session = models.ForeignKey(
@@ -42,3 +53,29 @@ class LectureLog(models.Model):
 
     def __str__(self):
         return f'Lecture Log: {self.role} - {self.message[:20]}'
+
+
+class LectureTopic(models.Model):
+    session = models.ForeignKey(
+        LectureSession,
+        on_delete=models.CASCADE,
+        related_name="topics",
+    )
+    order = models.PositiveIntegerField()
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    is_completed = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Lecture Topic"
+        verbose_name_plural = "Lecture Topics"
+        ordering = ["order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "order"],
+                name="unique_topic_order_per_session",
+            ),
+        ]
+
+    def __str__(self):
+        return f"LectureTopic {self.order}: {self.title}"
