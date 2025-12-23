@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Exam | My-Studyapp{% endblock title %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container">
+    <div class="my-div-style ">
+        <div class="">
+            <h1>{{ format }}</h1>
+            <h3>&lt; Topic: {{ title }} &gt;</h3>
+        </div>
+    </div>
+</div>
+{% endblock content %}

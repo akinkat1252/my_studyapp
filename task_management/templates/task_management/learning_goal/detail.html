@@ -43,7 +43,7 @@
             <hr>
             <div class="d-flex align-items-center gap-4">
                 <h3>・{{ main.title }}</h3>
-                <a href="#" class="btn btn-sm btn-success">MCQ</a>
+                <a href="{% url "exam:mcq_for_main_topic" main.id %}" class="btn btn-sm btn-success">MCQ</a>
                 <a href="#" class="btn btn-sm btn-warning">WT</a>
             </div>
                 {% if main.sub_topics.all %}
@@ -51,8 +51,8 @@
                         {% for sub in main.sub_topics.all %}
                             <hr>
                             <li class="d-flex align-items-center gap-4">
-                                <a href="#">・{{ sub.title }}/</a>
-                                <a href="#" class="btn btn-sm btn-success">MCQ</a>
+                                <a href="{% url "lecture:lecture" sub.id %}">・{{ sub.title }}/</a>
+                                <a href="{% url "exam:mcq_for_sub_topic" sub.id %}" class="btn btn-sm btn-success">MCQ</a>
                                 <a href="#" class="btn btn-sm btn-warning">WT</a>
                             </li>                     
                         {% endfor %}
