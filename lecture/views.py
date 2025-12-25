@@ -8,6 +8,7 @@ from django.utils.safestring import mark_safe
 from task_management.models import LearningMainTopic, LearningSubTopic
 from .models import LectureSession, LectureLog
 from .services import create_new_lecture_session
+from ai_support.modules.lecture.generate_lecture import generate_lecture_outline
 
 
 # Create your views here.
@@ -22,10 +23,12 @@ class LectureView(LoginRequiredMixin, View):
         )
 
         session = create_new_lecture_session(user=request.user, sub_topic=sub_topic)
+        generated_outline = generate_lecture_outline(session=session)
+        print(generated_outline)
 
         context = {
-            "title": sub_topic.title,
             "session": session,
+            "outline": mark_safe(markdown.markdown(generated_outline.content)),
         }
 
         return render(request, self.template_name, context)

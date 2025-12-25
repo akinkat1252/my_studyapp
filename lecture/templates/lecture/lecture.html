@@ -9,7 +9,7 @@
     <div class="my-div-style">
         <div>
             <h1>Lecture by AI</h1>
-            <h3>&lt; Topic: {{ title }} &gt;</h3>
+            <h3>&lt; Topic: {{ session.sub_topic.title }} &gt;</h3>
             <p></p>
         </div>
 
@@ -17,7 +17,7 @@
             <div class="text-start mb-2">
                 <span class="badge bg-success mb-1">AI</span>
                 <div class="d-inline-block bg-white border p-2 rounded">
-                    #
+                    {{ outline|safe }}
                 </div>
             </div>
         </div>
