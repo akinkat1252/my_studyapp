@@ -1,3 +1,4 @@
+import json
 import markdown
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import JsonResponse
@@ -23,12 +24,19 @@ class LectureView(LoginRequiredMixin, View):
         )
 
         session = create_new_lecture_session(user=request.user, sub_topic=sub_topic)
-        generated_outline = generate_lecture_outline(session=session)
-        print(generated_outline)
+        # Generate lecture outline (response(AIMessage) -> )
+        response = generate_lecture_outline(session=session)
+        generated_outline = json.loads(response.content)
+
+        md_lines = []
+        for item in generated_outline:
+            md_lines.append(f"{item['order']}. {item['title']}")
+
+        md_text = "\n".join(md_lines)
 
         context = {
             "session": session,
-            "outline": mark_safe(markdown.markdown(generated_outline.content)),
+            "outline": mark_safe(markdown.markdown(md_text)),
         }
 
         return render(request, self.template_name, context)
