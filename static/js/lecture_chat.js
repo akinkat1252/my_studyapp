@@ -16,17 +16,21 @@ document.addEventListener("DOMContentLoaded", function() {
         if (sender === "AI") {
             wrapper.classList.add("justify-content-start");
             wrapper.innerHTML = `
-                <div class="text-start d-flex flex-column">
-                    <span class="badge bg-success mb-1">AI</span>
-                    <div class="d-inline-block bg-white border p-2 rounded">${content}</div>
+                <div class="d-flex align-items-start">
+                    <span class="badge bg-success me-2">AI</span>
+                    <div class="bg-white border p-2 rounded message">
+                        ${content}
+                    </div>
                 </div>
             `;
         } else {
             wrapper.classList.add("justify-content-end");
             wrapper.innerHTML = `
-                <div class="text-end d-flex flex-column">
-                    <span class="badge bg-primary mb-1">You</span>
-                    <div class="d-inline-block bg-light border p-2 rounded">${content}</div>
+                <div class="d-flex align-items-start">
+                    <span class="badge bg-primary me-2">You</span>
+                    <div class="bg-light border p-2 rounded message">
+                        ${content}
+                    </div>
                 </div>
             `;
         }
