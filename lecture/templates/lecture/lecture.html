@@ -10,7 +10,19 @@
         <div>
             <h1>Lecture by AI</h1>
             <h3>&lt; Topic: {{ session.sub_topic.title }} &gt;</h3>
-            <p></p>
+            <p>We will start the lecture on <strong>{{ session.sub_topic.title }}</strong>.</p>
+            <p>This lectures will cover the following topics in order.</p>
+        </div>
+
+        <!-- Dismissible explanatory message -->
+        <div class="alert alert-secondary alert-dismissible fade show py-2" role="alert" style="font-size: 0.85rem;">
+            <div>
+                <p class="mb-0">&lt; Button Guide &gt;</p>
+                <p>1.Press <button class="btn btn-primary">Next</button> to go to the next topic.</p>
+                <p>2.You can ask questions or make inquiries at any time by entering text in the chat screen and pressing <button class="btn btn-info">Send</button>.</p>
+                <p>3.Press <button class="btn btn-secondary">End</button> to end the lecture at any time.</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 
         <div id="chat-box" class="chat-box mb-3 border rounded p-3" style="max-height: 500px; overflow-y: auto;">
