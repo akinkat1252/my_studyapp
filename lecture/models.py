@@ -56,10 +56,10 @@ class LectureLog(models.Model):
 
 
 class LectureTopic(models.Model):
-    session = models.ForeignKey(
-        LectureSession,
+    sub_topic = models.ForeignKey(
+        "task_management.LearningSubTopic",
         on_delete=models.CASCADE,
-        related_name="topics",
+        related_name="lecture_topics",
     )
     order = models.PositiveIntegerField()
     title = models.CharField(max_length=255)
@@ -72,8 +72,8 @@ class LectureTopic(models.Model):
         ordering = ["order"]
         constraints = [
             models.UniqueConstraint(
-                fields=["session", "order"],
-                name="unique_topic_order_per_session",
+                fields=["sub_topic", "order"],
+                name="unique_topic_order_per_sub_topic",
             ),
         ]
 
