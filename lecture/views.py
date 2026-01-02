@@ -14,7 +14,7 @@ from ai_support.modules.lecture.generate_lecture import generate_lecture_outline
 
 
 # Create your views here.
-class LectureView(LoginRequiredMixin, View):
+class LectureStartView(LoginRequiredMixin, View):
     template_name = "lecture/lecture.html"
 
     def get(self, request, topic_id):

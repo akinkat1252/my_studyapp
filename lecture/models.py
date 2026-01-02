@@ -13,6 +13,11 @@ class LectureSession(models.Model):
         on_delete=models.CASCADE,
         related_name='lecture_sessions',
     )
+    topics = models.ManyToManyField(
+        'LectureTopic',
+        through='LectureProgress',
+        related_name='lecture_sessions',
+    )
     lecture_number = models.PositiveIntegerField()
     summary = models.TextField(blank=True)
     total_tokens = models.PositiveBigIntegerField(default=0)
@@ -22,7 +27,7 @@ class LectureSession(models.Model):
     class Meta:
         verbose_name = "Lecture Session"
         verbose_name_plural = "Lecture Sessions"
-        ordering = ["lecture_number"]
+        ordering = ["user", "sub_topic", "lecture_number"]
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "sub_topic", "lecture_number"],
@@ -61,21 +66,49 @@ class LectureTopic(models.Model):
         on_delete=models.CASCADE,
         related_name="lecture_topics",
     )
-    order = models.PositiveIntegerField()
+    default_order = models.PositiveIntegerField()
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    is_completed = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Lecture Topic"
         verbose_name_plural = "Lecture Topics"
-        ordering = ["order"]
+        ordering = ["default_order"]
         constraints = [
             models.UniqueConstraint(
-                fields=["sub_topic", "order"],
-                name="unique_topic_order_per_sub_topic",
+                fields=["sub_topic", "default_order"],
+                name="unique_topic_default_order_per_sub_topic",
             ),
         ]
 
     def __str__(self):
-        return f"LectureTopic {self.order}: {self.title}"
+        return f"LectureTopic {self.default_order}: {self.title}"
+
+
+class LectureProgress(models.Model):
+    session = models.ForeignKey(
+        LectureSession,
+        on_delete=models.CASCADE,
+        related_name='progress_records',
+    )
+    topic = models.ForeignKey(
+        LectureTopic,
+        on_delete=models.CASCADE,
+        related_name='progress_records',
+    )
+    order = models.PositiveIntegerField()
+    is_completed = models.BooleanField(default=False)
+    started_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Lecture Progress"
+        verbose_name_plural = "Lecture Progress Records"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session", "topic"],
+                name="unique_progress_per_session_and_topic",
+            ),
+        ]
+
+    def __str__(self):
+        return f'Lecture Progress: Session {self.session.id} - Topic {self.order}'
