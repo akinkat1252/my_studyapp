@@ -4,9 +4,9 @@ from .lecture_history import LectureHistoryBuilder
 from .lecture_prompts import get_lecture_outline_prompt
 
 
-def generate_lecture_outline(session: LectureSession) -> dict:
+def generate_lecture_outline(sub_topic) -> dict:
     llm = get_chat_model()
-    prompt = get_lecture_outline_prompt(session=session)
+    prompt = get_lecture_outline_prompt(sub_topic=sub_topic)
     response = llm.invoke(prompt)
     return response
 
