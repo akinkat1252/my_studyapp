@@ -36,7 +36,11 @@
             </div>
         </div>
 
-        <form id="chat-form" data-url="{% url 'lecture:lecture' session.sub_topic.id %}" action="">
+        <form id="chat-form" 
+            data-chat-url="{% url 'lecture:lecture' session.id %}" 
+            data-next-topic-url="{% url 'lecture:next_topic' session.id %}" 
+            data-end-lecture-url="{% url 'lecture:end_lecture' session.id %}" 
+            action="">
             {% csrf_token %}
             <textarea id="user-input" name="user_input" class="form-control mb-2" rows="3" placeholder="Your response..."></textarea>
             <div>

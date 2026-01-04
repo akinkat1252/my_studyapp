@@ -25,12 +25,10 @@ class LectureStartView(LoginRequiredMixin, View):
         )
         # Get previous session to reuse "lecture topic"
         outlines_qs = sub_topic.lecture_topics.all()
-        # Create new session
-        session = create_new_lecture_session(user=request.user, sub_topic=sub_topic)
 
         if not outlines_qs.exists():
-            # Generate lecture outline (response(AIMessage) -> )
-            response = generate_lecture_outline(session=session)
+            # Generate lecture outline (response(AIMessage) -> [{"order": int, "title": str}...])
+            response = generate_lecture_outline(sub_topic=sub_topic)
             generated_outline = json.loads(response.content)
 
             try:
@@ -39,16 +37,19 @@ class LectureStartView(LoginRequiredMixin, View):
                         for item in generated_outline:
                             LectureTopic.objects.create(
                                 sub_topic=sub_topic,
-                                order=item['order'],
+                                default_order=item['order'],
                                 title=item['title'],
                             )
             except IntegrityError:
                 pass
 
-            outlines_qs = sub_topic.lecture_topics.all()
+            outlines_qs = sub_topic.lecture_topics.all().order_by("default_order")
+
+        # Create new session
+        session = create_new_lecture_session(user=request.user, sub_topic=sub_topic)
 
         md_text = "\n".join(
-            f"{outline.order}. {outline.title}" for outline in outlines_qs
+            f"{outline.default_order}. {outline.title}" for outline in outlines_qs
         )
 
         context = {
@@ -57,3 +58,33 @@ class LectureStartView(LoginRequiredMixin, View):
         }
 
         return render(request, self.template_name, context)
+
+
+class LectureNextView(LoginRequiredMixin, View):
+    def post(self, request, session_id):
+        session = get_object_or_404(
+            LectureSession,
+            id=session_id,
+            user=request.user,
+        )
+        pass
+
+
+class LectureChatView(LoginRequiredMixin, View):
+    def post(self, request, session_id):
+        session = get_object_or_404(
+            LectureSession,
+            id=session_id,
+            user=request.user,
+        )
+        pass
+
+
+class LectureEndView(LoginRequiredMixin, View):
+    def post(self, request, session_id):
+        session = get_object_or_404(
+            LectureSession,
+            id=session_id,
+            user=request.user,
+        )
+        pass

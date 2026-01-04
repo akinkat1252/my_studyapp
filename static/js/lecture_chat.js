@@ -4,7 +4,9 @@ document.addEventListener("DOMContentLoaded", function() {
     const userInput = document.getElementById("user-input");
     const nextTopicButton = document.getElementById("next-topic");
     const endLectureButton = document.getElementById("end-lecture");
-    const chatUrl = chatForm.dataset.url;
+    const chatUrl = chatForm.dataset.chatUrl;
+    const nextTopicUrl = chatForm.dataset.nextTopicUrl;
+    const endLectureUrl = chatForm.dataset.endLectureUrl;
     const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
 
     function appendMessage(sender, text="", isLoading=false) {
@@ -73,13 +75,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
     nextTopicButton.addEventListener("click", function () {
-        fetch(chatUrl, {
+        fetch(nextTopicUrl, {
             method: "POST",
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-CSRFToken': csrfToken
             },
-            body: new URLSearchParams({ user_input: "Next"})
         })
         .then(response => response.json())
         .then(data => {
@@ -89,13 +90,12 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
     endLectureButton.addEventListener("click", function () {
-        fetch(chatUrl, {
+        fetch(endLectureUrl, {
             method: "POST",
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
                 'X-CSRFToken': csrfToken
             },
-            body: new URLSearchParams({ user_input: "End"})
         })
         .then(response => response.json())
         .then(data => {
