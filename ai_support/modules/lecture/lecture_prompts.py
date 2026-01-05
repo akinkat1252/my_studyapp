@@ -22,7 +22,8 @@ def get_lecture_prompt(session, topic):
        "You are a good teacher.Users will attend lectures on the following title.\n"
        f"Title: {session.sub_topic.title}\n"
        f"Current Topic: {topic.title}\n"
-       "Deliver a lecture to the user based on the current topic.\n"
-       "Provide clear and concise explanations, and engage the user with questions.\n"
+       "1.Deliver a lecture to the user based on the current topic.\n"
+       "2.If you include examples such as programming code, they must be separated from the text.\n"
+       "3.Provide clear and concise explanations, and engage the user with questions.\n"
     )
     return prompt_text

@@ -5,12 +5,13 @@ from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic, View
+from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from task_management.models import LearningMainTopic, LearningSubTopic
-from .models import LectureSession, LectureLog, LectureTopic
+from .models import LectureSession, LectureLog, LectureTopic, LectureProgress
 from .services import create_new_lecture_session
-from ai_support.modules.lecture.generate_lecture import generate_lecture_outline
+from ai_support.modules.lecture.generate_lecture import generate_lecture_outline, generate_lecture
 
 
 # Create your views here.
@@ -28,8 +29,8 @@ class LectureStartView(LoginRequiredMixin, View):
 
         if not outlines_qs.exists():
             # Generate lecture outline (response(AIMessage) -> [{"order": int, "title": str}...])
-            response = generate_lecture_outline(sub_topic=sub_topic)
-            generated_outline = json.loads(response.content)
+            ai_response = generate_lecture_outline(sub_topic=sub_topic)
+            generated_outline = json.loads(ai_response.content)
 
             try:
                 with transaction.atomic():
@@ -67,7 +68,50 @@ class LectureNextView(LoginRequiredMixin, View):
             id=session_id,
             user=request.user,
         )
-        pass
+        # check if the lecture has never started
+        has_started = session.logs.filter(role='ai').exists()
+        
+
+        if not has_started:
+            # Mark the previous topic as completed
+            current_progress = (
+                session.progress_records
+                .filter(is_completed=False)
+                .order_by("order")
+                .first()
+            )
+            if current_progress:
+                current_progress.is_completed = True
+                current_progress.save()
+
+        next_progress = (
+            session.progress_records
+            .filter(is_completed=False)
+            .order_by("order")
+            .first()
+        )
+
+        if not next_progress:
+            return JsonResponse({"redirect_url": reverse("lecture:end_lecture", args=[session.id])})
+        
+        # generate lecture content
+        ai_response = generate_lecture(session=session, topic=next_progress.topic)
+        html_content = mark_safe(markdown.markdown(ai_response.content))
+        print(ai_response.content)
+
+        # Log AI response
+        LectureLog.objects.create(
+            session=session,
+            role='ai',
+            message=ai_response.content,
+            token_count=ai_response.token_count,
+        )
+
+        context = {
+            "lecture_content": html_content,
+        }
+
+        return JsonResponse(context)
 
 
 class LectureChatView(LoginRequiredMixin, View):
