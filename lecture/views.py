@@ -7,6 +7,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views import generic, View
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from datetime import datetime, timezone
 
 from task_management.models import LearningMainTopic, LearningSubTopic
 from .models import LectureSession, LectureLog, LectureTopic, LectureProgress
@@ -77,8 +78,7 @@ class LectureNextView(LoginRequiredMixin, View):
         # check if the lecture has never started
         has_started = session.logs.filter(role='ai').exists()
         
-
-        if not has_started:
+        if has_started:
             # Mark the previous topic as completed
             current_progress = (
                 session.progress_records
@@ -175,7 +175,11 @@ class LectureChatView(LoginRequiredMixin, View):
             token_count=total_tokens,
         )
 
-        
+        # generate summary and save to session
+        summary_response = generate_lecture_summary(session=session)
+        session.summary = summary_response.content
+        session.save()
+
         html_content = mark_safe(markdown.markdown(ai_response.content))
 
         context = {
@@ -185,8 +189,6 @@ class LectureChatView(LoginRequiredMixin, View):
         return JsonResponse(context)
 
 
-
-
 class LectureEndView(LoginRequiredMixin, View):
     def post(self, request, session_id):
         session = get_object_or_404(
@@ -194,4 +196,28 @@ class LectureEndView(LoginRequiredMixin, View):
             id=session_id,
             user=request.user,
         )
-        pass
+
+        # Mark the current topic as completed
+        current_progress = (
+            session.progress_records
+            .filter(is_completed=False)
+            .order_by("order")
+            .first()
+        )
+        if current_progress:
+            current_progress.is_completed = True
+            current_progress.save()
+        
+
+        # Mark session as ended
+        now = datetime.now(timezone.utc)
+        session.ended_at = now
+        session.save()
+        
+        # Calculate total tokens used in the session
+        for log in session.logs.filter(role='ai'):
+            used_tokens = log.token_count
+            session.total_tokens += used_tokens
+        session.save()
+
+        return redirect("task_management:learning_goal_detail", goal_id=session.sub_topic.learning_goal.id)
