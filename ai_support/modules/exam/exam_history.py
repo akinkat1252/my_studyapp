@@ -5,7 +5,7 @@ from ai_support.ai_history import BaseHistoryBuilder
 class ExamHistoryBuilder(BaseHistoryBuilder):
     system_prompt = "You are an AI that creates exam questions."
 
-    def _build_history(self, session):
+    def _build_messages(self, session):
         messages = []
 
         for log in session.logs.order_by("question_number"):
