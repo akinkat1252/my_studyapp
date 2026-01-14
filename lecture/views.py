@@ -12,12 +12,8 @@ from datetime import datetime, timezone
 from task_management.models import LearningMainTopic, LearningSubTopic
 from .models import LectureSession, LectureLog, LectureTopic, LectureProgress
 from .services import create_new_lecture_session
-from ai_support.modules.lecture.generate_lecture import (
-    generate_lecture_outline, 
-    generate_lecture,
-    generate_lecture_summary,
-    generate_lecture_chat,
-)
+from ai_support.modules.lecture.generate_lecture import generate_lecture_outline
+from .services import advance_lecture, handle_lecture_chat, finalize_lecture
 
 
 # Create your views here.
@@ -75,50 +71,13 @@ class LectureNextView(LoginRequiredMixin, View):
             id=session_id,
             user=request.user,
         )
-        # check if the lecture has never started
-        has_started = session.logs.filter(role='ai').exists()
-        
-        if has_started:
-            # Mark the previous topic as completed
-            current_progress = (
-                session.progress_records
-                .filter(is_completed=False)
-                .order_by("order")
-                .first()
-            )
-            if current_progress:
-                current_progress.is_completed = True
-                current_progress.save()
 
-        next_progress = (
-            session.progress_records
-            .filter(is_completed=False)
-            .order_by("order")
-            .first()
-        )
+        next_lecture = advance_lecture(session=session) # {"is_ended": bool, "lecture_content": AIMessage}
 
-        if not next_progress:
+        if next_lecture.get("is_ended"):
             return JsonResponse({"redirect_url": reverse("lecture:end_lecture", args=[session.id])})
         
-        # generate lecture content
-        ai_response = generate_lecture(session=session, topic=next_progress.topic)
-        print(ai_response.content)
-
-        # Log AI response
-        usage = ai_response.usage_metadata or {}
-        total_tokens = usage.get("total_tokens", 0)
-        LectureLog.objects.create(
-            session=session,
-            role='ai',
-            message=ai_response.content,
-            token_count=total_tokens,
-        )
-
-        # generate summary and save to session
-        summary_response = generate_lecture_summary(session=session)
-        session.summary = summary_response.content
-        session.save()
-
+        ai_response = next_lecture.get("lecture_content")
         html_content = mark_safe(markdown.markdown(ai_response.content))
 
         context = {
@@ -141,45 +100,7 @@ class LectureChatView(LoginRequiredMixin, View):
         if not user_input:
             return JsonResponse({"error": "User input cannot be empty."}, status=400)
         
-        # Log user input
-        LectureLog.objects.create(
-            session=session,
-            role='user',
-            message=user_input,
-        )
-
-        current_progress = (
-            session.progress_records
-            .filter(is_completed=False)
-            .order_by("order")
-            .first()
-        )
-        if not current_progress:
-            return JsonResponse({"error": "No active lecture topic found."}, status=400)
-        
-        # generate lecture chat response
-        ai_response = generate_lecture_chat(
-            session=session,
-            current_progress=current_progress,
-            user_input=user_input,
-        )
-        print(ai_response.content)
-
-        # Log AI response
-        usage = ai_response.usage_metadata or {}
-        total_tokens = usage.get("total_tokens", 0)
-        LectureLog.objects.create(
-            session=session,
-            role='ai',
-            message=ai_response.content,
-            token_count=total_tokens,
-        )
-
-        # generate summary and save to session
-        summary_response = generate_lecture_summary(session=session)
-        session.summary = summary_response.content
-        session.save()
-
+        ai_response = handle_lecture_chat(session=session, user_input=user_input)
         html_content = mark_safe(markdown.markdown(ai_response.content))
 
         context = {
@@ -197,27 +118,15 @@ class LectureEndView(LoginRequiredMixin, View):
             user=request.user,
         )
 
-        # Mark the current topic as completed
-        current_progress = (
-            session.progress_records
-            .filter(is_completed=False)
-            .order_by("order")
-            .first()
-        )
-        if current_progress:
-            current_progress.is_completed = True
-            current_progress.save()
-        
-
-        # Mark session as ended
-        now = datetime.now(timezone.utc)
-        session.ended_at = now
-        session.save()
-        
-        # Calculate total tokens used in the session
-        for log in session.logs.filter(role='ai'):
-            used_tokens = log.token_count
-            session.total_tokens += used_tokens
-        session.save()
+        finalize_lecture(session=session)
 
         return redirect("task_management:learning_goal_detail", goal_id=session.sub_topic.learning_goal.id)
+
+
+class LectureReportView(LoginRequiredMixin, generic.DetailView):
+    model = LectureSession
+    template_name = "lecture/lecture_report.html"
+    context_object_name = "session"
+
+    def get_queryset(self):
+        return LectureSession.objects.filter(user=self.request.user, id=self.kwargs['session_id'])

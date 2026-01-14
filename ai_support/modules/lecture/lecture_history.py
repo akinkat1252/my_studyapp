@@ -65,3 +65,19 @@ class SummaryHistoryBuilder(BaseHistoryBuilder):
             messages.append(msg_class(content=new_log.message))
 
         return messages
+
+
+# for final report generation
+class LectureReportHistoryBuilder(BaseHistoryBuilder):
+    system_prompt = (
+        "You are an educational AI that writes a final learning report for the student."
+    )
+
+    def _build_messages(self, session):
+        messages = []
+
+        for log in session.logs.filter(role__in=['ai', 'user']).order_by('created_at'):
+            msg_class = ROLE_MAP[log.role]
+            messages.append(msg_class(content=log.message))
+
+        return messages
