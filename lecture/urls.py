@@ -8,4 +8,5 @@ urlpatterns = [
     path('next/<int:session_id>/', views.LectureNextView.as_view(), name='next_topic'),
     path('chat/<int:session_id>/', views.LectureChatView.as_view(), name='chat'),
     path('end/<int:session_id>/', views.LectureEndView.as_view(), name='end_lecture'),
+    path('report/<int:session_id>/', views.LectureReportView.as_view(), name='lecture_report'),
 ]

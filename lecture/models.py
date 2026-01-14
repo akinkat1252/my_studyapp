@@ -20,9 +20,16 @@ class LectureSession(models.Model):
     )
     lecture_number = models.PositiveIntegerField()
     summary = models.TextField(blank=True)
+    # snapshot for result screen
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    report = models.TextField(blank=True)
     total_tokens = models.PositiveBigIntegerField(default=0)
+    # raw timeline fields
     started_at = models.DateTimeField(auto_now_add=True)
     ended = models.DateTimeField(null=True, blank=True)
+    # lecture state
+    is_finished = models.BooleanField(default=False)
+    can_continue = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Lecture Session"

@@ -1,7 +1,7 @@
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from ai_support.ai_chain import get_chat_model_for_lecture, get_chat_model_for_summary
 from lecture.models import LectureSession, LectureLog, LectureTopic, LectureProgress
-from .lecture_history import SummaryHistoryBuilder, LectureHistoryBuilder
+from .lecture_history import SummaryHistoryBuilder, LectureHistoryBuilder, LectureReportHistoryBuilder
 
 
 def generate_lecture_outline(sub_topic) -> dict:
@@ -74,19 +74,41 @@ def generate_lecture_summary(session: LectureSession) -> str:
     return response
 
 
-def generate_lecture_chat(session: LectureSession, user_input: str) -> str:
+def generate_lecture_answer(session: LectureSession, user_input: str) -> str:
     llm = get_chat_model_for_lecture()
     history_builder = LectureHistoryBuilder()
     history = history_builder.build_messages(session=session)
     messages = [
+        *history,
         SystemMessage(content=(
             "Please respond based on the following rules.\n"
             "1.Respond appropriately to the user's input while maintaining the context of the lecture.\n"
             "2.If the user's response includes questions, answer them clearly and concisely.\n"
             "3.Encourage further engagement and understanding of the topic."
         )),
-        *history,
         HumanMessage(content=(user_input)),
+    ]
+    response = llm.invoke(messages)
+    return response
+
+
+def generate_lecture_report(session: LectureSession) -> str:
+    llm = get_chat_model_for_summary()
+    history_builder = LectureReportHistoryBuilder()
+    history = history_builder.build_messages(session=session)
+    messages = [
+        *history,
+        SystemMessage(content=(
+            f"Lecture Title: {session.sub_topic.title}\n"
+        )),
+        SystemMessage(content=(
+            "The output must follow the rules below.\n"
+            "1.Summarize what the student learned, what was covered, what remains unclear, and suggest next steps.\n"
+            "2.Highlight key points and important concepts covered during the lecture.\n"
+            "3.Suggest further reading or topics for the user to explore based on the lecture content."
+            "4.Write it for the learner, not for the AI."
+        )),
+        HumanMessage(content="Please generate a lecture report."),
     ]
     response = llm.invoke(messages)
     return response
