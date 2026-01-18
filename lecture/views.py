@@ -13,7 +13,7 @@ from task_management.models import LearningMainTopic, LearningSubTopic
 from .models import LectureSession, LectureLog, LectureTopic, LectureProgress
 from .services import create_new_lecture_session
 from ai_support.modules.lecture.generate_lecture import generate_lecture_outline
-from .services import advance_lecture, handle_lecture_chat, finalize_lecture
+from .services import advance_lecture, handle_lecture_chat, finalize_lecture, create_lecture_report
 
 
 # Create your views here.
@@ -81,6 +81,7 @@ class LectureNextView(LoginRequiredMixin, View):
         html_content = mark_safe(markdown.markdown(ai_response.content))
 
         context = {
+            "current_topic_title": next_lecture.get("current_topic").title,
             "lecture_content": html_content,
         }
 
@@ -120,13 +121,43 @@ class LectureEndView(LoginRequiredMixin, View):
 
         finalize_lecture(session=session)
 
-        return redirect("task_management:learning_goal_detail", goal_id=session.sub_topic.learning_goal.id)
+        return redirect("task_management:lecture_report", session_id=session.id)
 
 
-class LectureReportView(LoginRequiredMixin, generic.DetailView):
-    model = LectureSession
-    template_name = "lecture/lecture_report.html"
-    context_object_name = "session"
+class LectureReportView(LoginRequiredMixin, View):
+    def get(self, request, session_id):
+        session = get_object_or_404(
+            LectureSession,
+            id=session_id,
+            user=request.user,
+        )
 
-    def get_queryset(self):
-        return LectureSession.objects.filter(user=self.request.user, id=self.kwargs['session_id'])
+        if not session.report:
+            lecture_report = lecture_report(session=session)
+        else:
+            lecture_report = {
+                "generated_report": session.report,
+                "total_tokens_used": session.total_tokens,
+                "study_time_seconds": session.duration_seconds,
+            }
+        
+        html_content = mark_safe(markdown.markdown(lecture_report["generated_report"]))
+
+        context = {
+            "session": session,
+            "report_content": html_content,
+            "total_tokens": lecture_report["total_tokens_used"],
+            "study_time_seconds": lecture_report["study_time_seconds"],
+        }
+        return render(request, "lecture/lecture_report.html", context)
+    
+    def post(self, request, session_id):
+        session = get_object_or_404(
+            LectureSession,
+            id=session_id,
+            user=request.user,
+        )
+
+        finalize_lecture(session=session)
+
+        return redirect("task_management:lecture_report", session_id=session.id)

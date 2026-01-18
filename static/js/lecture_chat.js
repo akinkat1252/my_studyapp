@@ -2,12 +2,25 @@ document.addEventListener("DOMContentLoaded", function() {
     const chatBox = document.getElementById("chat-box");
     const chatForm = document.getElementById("chat-form");
     const userInput = document.getElementById("user-input");
+
+    const sendButton = document.getElementById("send-button");
     const nextTopicButton = document.getElementById("next-topic");
     const endLectureButton = document.getElementById("end-lecture");
+
     const chatUrl = chatForm.dataset.chatUrl;
     const nextTopicUrl = chatForm.dataset.nextTopicUrl;
     const endLectureUrl = chatForm.dataset.endLectureUrl;
+
     const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+    let isBusy = false;
+
+    function setBusy(state) {
+        isBusy = state;
+        sendButton.disabled = state;
+        nextTopicButton.disabled = state;
+        endLectureButton.disabled = state;
+    }
 
     function appendMessage(sender, text="", isLoading=false) {
         const wrapper = document.createElement("div");
@@ -42,18 +55,19 @@ document.addEventListener("DOMContentLoaded", function() {
         return wrapper.querySelector(".message")
     }
 
+    // Send (chat)
     chatForm.addEventListener("submit", function (e) {
         e.preventDefault();
-        const userMessage = userInput.value.trim();
+        if (isBusy) return;
 
-        if (!userMessage) {
-            return;
-        }
+        const userMessage = userInput.value.trim();
+        if (!userMessage) return;
 
         appendMessage("You", userMessage);
         userInput.value = ""
 
         const aiContainer = appendMessage("AI", "", true);
+        setBusy(true);
 
         fetch(chatUrl, {
             method: "POST",
@@ -72,9 +86,18 @@ document.addEventListener("DOMContentLoaded", function() {
         .catch(err => {
             aiContainer.innerHTML = "An error has occurred";
             console.error("Error: ", err);
+        })
+        .finally(() => {
+            setBusy(false);
         });
     });
+
+    // Next Topic
     nextTopicButton.addEventListener("click", function () {
+        if (isBusy) return;
+
+        setBusy(true);
+
         fetch(nextTopicUrl, {
             method: "POST",
             headers: {
@@ -86,10 +109,25 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(data => {
             if (data.redirect_url) {
                 window.location.href = data.redirect_url;
+            } else {
+                throw new Error("No reidirect URL");
             }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Failed to proceed to next topic.");
+            setBusy(false);
         });
     });
+
+    // End Lecture
     endLectureButton.addEventListener("click", function () {
+        if (isBusy) return;
+
+        if (!confirm("End the lecture and generate the report?"))
+
+        setBusy(true);
+
         fetch(endLectureUrl, {
             method: "POST",
             headers: {
@@ -101,7 +139,14 @@ document.addEventListener("DOMContentLoaded", function() {
         .then(data => {
             if (data.redirect_url) {
                 window.location.href = data.redirect_url;
+            } else {
+                throw new Error("No redirect URL");
             }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Failed to end the lecture.");
+            setBusy(false);
         });
     });
 });

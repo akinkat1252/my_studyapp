@@ -9,8 +9,18 @@
     <div class="my-div-style">
         <div>
             <h1>Lecture by AI</h1><hr>
+
             <h3>&lt; Topic: {{ session.sub_topic.title }} &gt;</h3>
-            <p class="mt-5">We will start the lecture on <strong>{{ session.sub_topic.title }}</strong>.</p>
+
+            {% if current_topic_title %}
+                <h5 class="text-muted mt-3">
+                    Current topic: {{ current_topic_title }}
+                </h5>
+            {% endif %}
+
+            <p class="mt-5">
+                We will start the lecture on <strong>{{ session.sub_topic.title }}</strong>.
+            </p>
             <p>This lectures will cover the following topics in order.</p>
         </div>
 
@@ -39,8 +49,7 @@
         <form id="chat-form" 
             data-chat-url="{% url 'lecture:chat' session.id %}" 
             data-next-topic-url="{% url 'lecture:next_topic' session.id %}" 
-            data-end-lecture-url="{% url 'lecture:end_lecture' session.id %}" 
-            action="">
+            data-end-lecture-url="{% url 'lecture:end_lecture' session.id %}" action="">
             {% csrf_token %}
             <textarea id="user-input" name="user_input" class="form-control mb-2" rows="3" placeholder="Your response..."></textarea>
             <div>

@@ -79,6 +79,7 @@ def advance_lecture(session) -> dict:
 
     return {
         "is_ended": False,
+        "current_topic": next_progress.topic,
         "lecture_content": ai_response.content,
     }
 
@@ -121,35 +122,36 @@ def finalize_lecture(session):
     
     # Save end time
     now = timezone.now()
-    session.ended_at = now
+    session.ended = now
     session.save()
 
     # Calculate total tokens used in the session
     total_tokens = (
         session.logs
-        .filter(role='ai')
         .aggregate(total=Sum('token_count'))['total']
         or 0
     )
     session.total_tokens = total_tokens
+
+    total_time = (session.ended - session.started_at) if session.started and session.ended else None
+    session.duration_seconds = int(total_time.total_seconds()) if total_time else None
+
+    session.is_finished = True
     session.save()
 
-    return total_tokens
 
-
-def lecture_report(session):
-    completed_topics = session.progress_records.filter(is_completed=True)
-
-    incomplete_topics = session.progress_records.filter(is_completed=False)
-    study_time = (session.ended_at - session.started_at) if session.ended_at and session.started_at else None
+def create_lecture_report(session):
     ai_response = generate_lecture_report(session=session)
+
+    if not ai_response:
+        raise ValueError("Failed to generate lecture report.")
+    
+    session.report = ai_response.content
+    session.save()
 
     report = {
         "generated_report": ai_response.content,
-        "total_topics": session.progress_records.count(),
-        "completed_topics": completed_topics.count(),
         "total_tokens": session.total_tokens,
-        "started_at": session.started_at,
-        "ended_at": session.ended_at,
+        "study_time_seconds": session.duration_seconds,
     }
     return report
