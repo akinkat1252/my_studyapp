@@ -80,7 +80,7 @@ def advance_lecture(session) -> dict:
     return {
         "is_ended": False,
         "current_topic": next_progress.topic,
-        "lecture_content": ai_response.content,
+        "lecture_content": ai_response,
     }
 
 
@@ -110,7 +110,7 @@ def handle_lecture_chat(session, user_input) -> str:
     session.summary = summary.content
     session.save()
 
-    return ai_response.content
+    return ai_response
 
 
 def finalize_lecture(session):
@@ -133,7 +133,7 @@ def finalize_lecture(session):
     )
     session.total_tokens = total_tokens
 
-    total_time = (session.ended - session.started_at) if session.started and session.ended else None
+    total_time = (session.ended - session.started_at) if session.started_at and session.ended else None
     session.duration_seconds = int(total_time.total_seconds()) if total_time else None
 
     session.is_finished = True
@@ -148,10 +148,13 @@ def create_lecture_report(session):
     
     session.report = ai_response.content
     session.save()
+    
+    next_progress = get_current_lecture_progress(session)
 
     report = {
         "generated_report": ai_response.content,
         "total_tokens": session.total_tokens,
         "study_time_seconds": session.duration_seconds,
+        "completed": True if not next_progress else False,
     }
     return report

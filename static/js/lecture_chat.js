@@ -95,8 +95,9 @@ document.addEventListener("DOMContentLoaded", function() {
     // Next Topic
     nextTopicButton.addEventListener("click", function () {
         if (isBusy) return;
-
         setBusy(true);
+
+        const aiContainer = appendMessage("AI", "", true);
 
         fetch(nextTopicUrl, {
             method: "POST",
@@ -107,15 +108,18 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.redirect_url) {
-                window.location.href = data.redirect_url;
+            if (data.lecture_content) {
+                aiContainer.innerHTML = data.lecture_content
             } else {
                 throw new Error("No reidirect URL");
             }
         })
         .catch(err => {
             console.error(err);
-            alert("Failed to proceed to next topic.");
+            aiContainer.innerHTML = "Failed to load next lecture.";
+            setBusy(false);
+        })
+        .finally(() => {
             setBusy(false);
         });
     });
@@ -124,29 +128,21 @@ document.addEventListener("DOMContentLoaded", function() {
     endLectureButton.addEventListener("click", function () {
         if (isBusy) return;
 
-        if (!confirm("End the lecture and generate the report?"))
+        if (!confirm("End the lecture and generate the report?")) {
+            return;
+        }
 
-        setBusy(true);
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = endLectureUrl;
 
-        fetch(endLectureUrl, {
-            method: "POST",
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': csrfToken
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.redirect_url) {
-                window.location.href = data.redirect_url;
-            } else {
-                throw new Error("No redirect URL");
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Failed to end the lecture.");
-            setBusy(false);
-        });
+        const csrfInput = document.createElement("input");
+        csrfInput.type = "hidden";
+        csrfInput.name = "csrfmiddlewaretoken";
+        csrfInput.value = csrfToken;
+
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
     });
 });

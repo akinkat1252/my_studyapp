@@ -9,4 +9,5 @@ urlpatterns = [
     path('chat/<int:session_id>/', views.LectureChatView.as_view(), name='chat'),
     path('end/<int:session_id>/', views.LectureEndView.as_view(), name='end_lecture'),
     path('report/<int:session_id>/', views.LectureReportView.as_view(), name='lecture_report'),
+    path('finish/<int:session_id>/', views.LectureFinishView.as_view(), name='lecture_finish'),
 ]
