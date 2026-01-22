@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Lecture Report | My-Studyapp{% endblock title %}
+{% block body_class %}White-page{% endblock body_class %}
+
+{% block content %}
+<div class="container">
+    <div class="my-div-style">
+        <h1 class="">Lecture Report by <strong>"{{ session.sub_topic.title }}"</strong></h1><hr>
+    </div>
+    <div class="mt-5">
+        <h3>Study Time: {{ study_time_min }} (min)</h3>
+        <h3>Used Tokens: {{ total_tokens }}</h3><hr>
+        <h3>Lecture Topic:</h3>
+        {% for p in progresses %}
+            <li>
+                {% if p.is_completed %}☑︎{% else %}◻︎{% endif %}
+                {{ p.topic.title }}
+            </li>
+        {% endfor %}
+        <hr><h3>&lt; Report &gt;</h3>
+        {{ report_content|safe }}
+    </div>
+    {% if not completed %}
+        <form action="{% url 'lecture:lecture_report' session.id %}" method="post" >
+            {% csrf_token %}
+            <input type="checkbox" name="can_continue" checked>
+            <span>Next time you attend a <strong>"{{ session.sub_topic.title }}"</strong> class, will you continue learning where you left off?</span>
+        </form>
+    {% endif %}
+</div>
+{% endblock content %}
