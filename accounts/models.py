@@ -12,7 +12,7 @@ class Language(models.Model):
         verbose_name_plural = "Languages"
 
     def __str__(self):
-        return f"{self.code}: {self.name}"
+        return f"{self.name}"
 
 
 class CustomUser(AbstractUser):

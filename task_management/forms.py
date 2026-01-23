@@ -1,11 +1,37 @@
 from django import forms
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout, Fieldset, ButtonHolder, Submit, Div, Field
-from .models import UserInterestCategory, DraftLearningGoal, LearningGoal
+from .models import UserInterestCategory, DraftLearningGoal
+from accounts.models import CustomUser
 
 
 # Form for adding interest categories to a user.
-class AddInterestCategoryForm(forms.ModelForm):
+class NativeLanguageSetForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ["user_language"]
+        widgets = {
+            "user_language": forms.Select(attrs={"class": "form_select"}),
+        }
+        labels = {
+            "user_language": "Select Native Language",
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.helper = FormHelper()
+        self.helper.form_method = 'post'
+        self.helper.layout = Layout(
+            Fieldset(
+                'Set Native Language',
+                Field('user_language')
+            ),
+            ButtonHolder(
+                Submit('submit', 'Set', css_class='btn btn-primary mt-4 mb-5')
+            )
+        )
+
+class InterestCategoryAddForm(forms.ModelForm):
     class Meta:
         model = UserInterestCategory
         fields = ['category']
