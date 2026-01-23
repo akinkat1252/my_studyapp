@@ -4,15 +4,30 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views import View, generic
 from django.urls import reverse_lazy
 from django.contrib import messages
-
-from .forms import AddInterestCategoryForm, LearningGoalSetForm
+from accounts.models import CustomUser
+from .forms import InterestCategoryAddForm, LearningGoalSetForm, NativeLanguageSetForm
 from .models import UserInterestCategory, LearningGoal, DraftLearningGoal, LearningMainTopic, LearningSubTopic
 
 
 # Create your views here.
 class IndexView(generic.TemplateView):
     template_name = 'task_management/index.html'
+
+ 
+class NativeLanguageSetView(LoginRequiredMixin, generic.UpdateView):
+    model = CustomUser
+    form_class = NativeLanguageSetForm
+    template_name = "task_management/set_native_language.html"
+    success_url = reverse_lazy("task_management:interest_category_list")
+
+    def get_object(self):
+        return self.request.user
     
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.user_language is not None:
+            return redirect("task_management:interest_category_list")
+        return super().dispatch(request, *args, **kwargs)
+
 
 # === Interest Category Views ===
 
@@ -28,7 +43,7 @@ class InterestCategoryListView(LoginRequiredMixin, generic.ListView):
 # View to create a new interest category for the user
 class InterestCategoryCreateView(LoginRequiredMixin, generic.CreateView):
     template_name = 'task_management/interest_category/create.html'
-    form_class = AddInterestCategoryForm
+    form_class = InterestCategoryAddForm
     success_url = reverse_lazy('task_management:interest_category_list')
 
     def form_valid(self, form):
