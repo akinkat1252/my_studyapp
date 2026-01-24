@@ -79,8 +79,10 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .then(response => response.json())
         .then(data => {
-            const html = data.ai_response;
-            aiContainer.innerHTML = html;
+            if (!data.lecture_content) {
+                throw new Error("lecture_content is missing")
+            }
+            aiContainer.innerHTML = data.lecture_content;
             chatBox.scrollTop = chatBox.scrollHeight;
         })
         .catch(err => {
@@ -108,11 +110,10 @@ document.addEventListener("DOMContentLoaded", function() {
         })
         .then(response => response.json())
         .then(data => {
-            if (data.lecture_content) {
-                aiContainer.innerHTML = data.lecture_content
-            } else {
-                throw new Error("No reidirect URL");
+            if (!data.lecture_content) {
+                throw new Error("lecture_content is missing");
             }
+            aiContainer.innerHTML = data.lecture_content
         })
         .catch(err => {
             console.error(err);

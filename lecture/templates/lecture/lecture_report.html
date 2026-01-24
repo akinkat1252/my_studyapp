@@ -21,12 +21,16 @@
         {% endfor %}
         <hr><h3>&lt; Report &gt;</h3>
         {{ report_content|safe }}
-    </div>
+    </div><hr>
     {% if not completed %}
         <form action="{% url 'lecture:lecture_report' session.id %}" method="post" >
             {% csrf_token %}
-            <input type="checkbox" name="can_continue" checked>
-            <span>Next time you attend a <strong>"{{ session.sub_topic.title }}"</strong> class, will you continue learning where you left off?</span>
+            <div class="m-4">
+                <p>Next time you attend a <strong>"{{ session.sub_topic.title }}"</strong> class, will you continue learning where you left off?</p>
+                <p>If you do not want to continue, uncheck the box.</p>
+                <input type="checkbox" name="can_continue" checked><br>
+            </div>
+            <button class="btn btn-primary mt-5 mb-5">Finish</button>
         </form>
     {% endif %}
 </div>
