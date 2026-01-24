@@ -1,12 +1,17 @@
 import json
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views import View, generic
-from django.urls import reverse_lazy
+
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
+from django.views import View, generic
+
 from accounts.models import CustomUser
-from .forms import InterestCategoryAddForm, LearningGoalSetForm, NativeLanguageSetForm
-from .models import UserInterestCategory, LearningGoal, DraftLearningGoal, LearningMainTopic, LearningSubTopic
+
+from .forms import (InterestCategoryAddForm, LearningGoalSetForm,
+                    NativeLanguageSetForm)
+from .models import (DraftLearningGoal, LearningGoal, LearningMainTopic,
+                     LearningSubTopic, UserInterestCategory)
 
 
 # Create your views here.

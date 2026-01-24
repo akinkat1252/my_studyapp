@@ -1,19 +1,20 @@
-from langchain_core.messages import SystemMessage
 from abc import ABC, abstractmethod
 
+from langchain_core.messages import BaseMessage, SystemMessage
 
-class BaseHistoryBuilder:
-    system_prompt: str = ""
 
-    def build_messages(self, session) -> list:
+class BaseHistoryBuilder(ABC):
+
+    def build_messages(self, session) -> list[BaseMessage]:
         messages = []
-
-        if self.system_prompt:
-            messages.append(SystemMessage(content=self.system_prompt))
-
-        messages.extend(self._build_messages(session=session))
+        messages.extend(self.build_system_context(session=session))
+        messages.extend(self.build_conversation(session=session))
         return messages
 
     @abstractmethod
-    def _build_messages(self, session) -> list:
+    def build_system_context(self, session) -> list[SystemMessage]:
+        pass
+
+    @abstractmethod
+    def build_conversation(self, session) -> list[BaseMessage]:
         pass

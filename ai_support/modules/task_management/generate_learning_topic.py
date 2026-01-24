@@ -1,17 +1,20 @@
 import json
 import re
-from ai_support.ai_client import get_ai_client
 
+from accounts.models import Language
+from ai_support.ai_client import get_ai_client
+from ai_support.modules.common.services import language_constraint
 
 client = get_ai_client()
 
-def generate_learning_topic(title, current_level, target_level, description):
+def generate_learning_topic(title, current_level, target_level, description, language: Language):
     prompt = (
         f"Generate a detailed learning topic outline for the following learning goal:\n"
         f"Title: {title}\n"
         f"Current Level: {current_level}\n"
         f"Target Level: {target_level}\n"
         f"Description: {description}\n\n"
+        f"{language_constraint(language=language)}"
         f"The outline should include main topics and subtopics in a structured JSON format.\n"
         "<Creation Rules>\n"
         "1. Divide the plan into main topics and sub_topics, as shown in the example.\n"
@@ -19,7 +22,7 @@ def generate_learning_topic(title, current_level, target_level, description):
         "3. Current level and target level are optional but should be considered if provided.\n"
         "4. If optional inputs are empty, create the most standard learning path.\n"
         "5. Output must be valid JSON (no extra text).\n"
-        "6. Output language should match the input language.\n"
+        "6. Output language should match the input language.\n\n"
         "<Example Output>\n"
         "{\n"
         '  "main_topics": [\n'
@@ -38,7 +41,7 @@ def generate_learning_topic(title, current_level, target_level, description):
         "      ]\n"
         "    }\n"
         "  ]\n"
-        "}\n"       
+        "}"       
     )
 
     response = client.chat.completions.create(

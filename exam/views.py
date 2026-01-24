@@ -1,10 +1,11 @@
 import markdown
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, get_object_or_404
-from django.views import generic, View
+from django.shortcuts import get_object_or_404, render
+from django.views import View, generic
 
 from task_management.models import LearningMainTopic, LearningSubTopic
-from .models import ExamSession, ExamLog, ExamEvaluation
+
+from .models import ExamEvaluation, ExamLog, ExamSession
 
 
 # Create your views here.

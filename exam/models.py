@@ -1,6 +1,8 @@
-from django.db import models, transaction
-from config import settings_common
 from django.core.exceptions import ValidationError
+from django.db import models, transaction
+
+from config import settings_common
+
 
 # Create your models here.
 class ExamSession(models.Model):

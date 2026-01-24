@@ -1,13 +1,12 @@
 from django.db import transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
-from .models import LectureSession, LectureProgress, LectureLog
+
 from ai_support.modules.lecture.generate_lecture import (
-    generate_lecture,
-    generate_lecture_summary,
-    generate_lecture_answer,
-    generate_lecture_report,
-)
+    generate_lecture, generate_lecture_answer, generate_lecture_report,
+    generate_lecture_summary)
+
+from .models import LectureLog, LectureProgress, LectureSession
 
 
 def create_new_lecture_session(user, sub_topic):
