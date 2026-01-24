@@ -30,6 +30,7 @@ class LectureStartView(LoginRequiredMixin, View):
             user=self.request.user,
             id=sub_topic_id,
         )
+
         # Get previous session to reuse "lecture topic"
         outlines_qs = sub_topic.lecture_topics.all()
 
@@ -162,7 +163,7 @@ class LectureReportView(LoginRequiredMixin, View):
             "progresses": progresses,
             "report_content": html_content,
             "total_tokens": lecture_report["total_tokens"],
-            "study_time_min": lecture_report["study_time_seconds"] / _display_time,
+            "study_time_min": round(lecture_report["study_time_seconds"] / _display_time, 1),
             "completed": lecture_report["completed"],
         }
         return render(request, "lecture/lecture_report.html", context)

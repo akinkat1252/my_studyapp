@@ -8,6 +8,8 @@ from ai_support.modules.common.services import language_constraint
 from lecture.models import (LectureLog, LectureProgress, LectureSession,
                             LectureTopic)
 
+from task_management.models import LearningSubTopic
+
 from .lecture_history import (LectureGenerationHistorybuilder,
                               LectureHistoryBuilder,
                               LectureReportHistoryBuilder,
@@ -24,28 +26,51 @@ COMMON_SAFETY_RULES = (
 
 
 
-def generate_lecture_outline(sub_topic) -> AIMessage:
+def generate_lecture_outline(sub_topic: LearningSubTopic) -> AIMessage:
     llm = get_chat_model_for_lecture()
+
+    main_topic = sub_topic.main_topic
+    all_sub_topics = main_topic.sub_topics.order_by("id")
+    sub_topic_titles = [
+        f"{i + 1}. {st.title}"
+        for i, st in enumerate(all_sub_topics)
+    ]
+
     messages = [
         SystemMessage(content=(
             f"{GLOBAL_PERSONAL}\n"
-            "You need to generate learning topics that will serve as an outline for your lecture.\n\n"
+            "You are generating a lecture outline for ONE specific sub-topic.\n\n"
+
             f"{language_constraint(language=sub_topic.user.user_language)}\n\n"
-            "CONTEXT:\n"
-            f"Lecture Title: {sub_topic.title}\n\n"
-            "The output must follow the rules below.\n"
-            "- First, output lecture topics as a numbered list.\n"
-            "- Each topic must be short and suitable as a section title.\n"
-            "- Output in the language used in the title.\n"
-            "- Output must be valid JSON (no extra text).\n\n"
+
+            "LECTURE STRUCTURE CONTEXT:\n"
+            f"Learning Goal: {sub_topic.learning_goal.title}\n"
+            f"Main Topic: {main_topic.title}\n\n"
+
+            f"All sub-topics under this main topic:\n"
+            + "\n".join(sub_topic_titles) + "\n\n"
+
+            "CURRENT LECTURE TARGET:\n"
+            f"- {sub_topic.title}\n\n"
+
+            "STRICT RULES:\n"
+            "- Generate an outline ONLY for the current lecture target.\n"
+            "- Do NOT generate outlines for other sub-topics.\n"
+            "- You may reference other sub-topics ONLY to provide context, not explanation.\n"
+            "- Do NOT include content that belongs to previous or next sub-topics.\n\n"
+
+            "OUTPUT FORMAT RULES:\n"
+            "- Output a numbered lecture outline.\n"
+            "- Each item must be short and suitable as a section title.\n"
+            "- Output must be valid JSON only (no extra text).\n\n"
+
             "<Example Output>\n"
             "[\n"
             '  {"order": 1, "title": "..."},\n'
             '  {"order": 2, "title": "..."},\n'
-            "  ...\n"
             "]"
         )),
-        HumanMessage(content="Please generate the lecture outline."),
+        HumanMessage(content="Generate the lecture outline."),
     ]
     response = llm.invoke(messages)
     try:
@@ -65,6 +90,7 @@ def generate_lecture(session: LectureSession, topic: LectureTopic) -> AIMessage:
             f"{GLOBAL_PERSONAL}\n\n"
             f"{language_constraint(language=session.user.user_language)}\n\n"
             "The output must follow the rules below.\n"
+            "- No greetings needed.\n"
             "- Deliver a lecture to the user based on the current topic.\n"
             "- If you include examples such as programming code, they must be separated from the text.\n"
             "- Provide clear and concise explanations, and engage the user with questions."
@@ -92,7 +118,7 @@ def generate_lecture_summary(session: LectureSession) -> AIMessage:
             "Update the existing summary using the new conversation.\n"
             "Preserve important past information. Never lose earlier content.\n\n"
             f"{language_constraint(language=session.user.user_language)}\n\n"
-        ))
+        )),
         *history_messages,
         HumanMessage(content="Please update the summary."),
     ]
