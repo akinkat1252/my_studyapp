@@ -1,8 +1,11 @@
-from django import forms
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Fieldset, ButtonHolder, Submit, Div, Field
-from .models import UserInterestCategory, DraftLearningGoal
+from crispy_forms.layout import (ButtonHolder, Div, Field, Fieldset, Layout,
+                                 Submit)
+from django import forms
+
 from accounts.models import CustomUser
+
+from .models import DraftLearningGoal, UserInterestCategory
 
 
 # Form for adding interest categories to a user.

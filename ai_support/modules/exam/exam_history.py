@@ -1,4 +1,5 @@
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import AIMessage, HumanMessage
+
 from ai_support.ai_history import BaseHistoryBuilder
 
 

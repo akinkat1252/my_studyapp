@@ -1,7 +1,6 @@
 import os
+
 from openai import OpenAI
-
-
 
 _client = None
 

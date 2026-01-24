@@ -1,19 +1,23 @@
 import json
+from datetime import datetime, timezone
+
 import markdown
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import IntegrityError, transaction
 from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404, redirect
-from django.views import generic, View
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from datetime import datetime, timezone
+from django.views import View, generic
 
+from ai_support.modules.lecture.generate_lecture import \
+    generate_lecture_outline
 from task_management.models import LearningMainTopic, LearningSubTopic
-from .models import LectureSession, LectureLog, LectureTopic, LectureProgress
-from .services import create_new_lecture_session
-from ai_support.modules.lecture.generate_lecture import generate_lecture_outline
-from .services import advance_lecture, handle_lecture_chat, finalize_lecture, create_lecture_report, get_current_lecture_progress
+
+from .models import LectureLog, LectureProgress, LectureSession, LectureTopic
+from .services import (advance_lecture, create_lecture_report,
+                       create_new_lecture_session, finalize_lecture,
+                       get_current_lecture_progress, handle_lecture_chat)
 
 
 # Create your views here.
