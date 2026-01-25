@@ -103,3 +103,4 @@ class LectureReportHistoryBuilder(BaseHistoryBuilder):
                 messages.append(msg_class(content=log.message))
 
         return messages
+
