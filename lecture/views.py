@@ -31,34 +31,57 @@ class LectureStartView(LoginRequiredMixin, View):
             id=sub_topic_id,
         )
 
-        # Get previous session to reuse "lecture topic"
-        outlines_qs = sub_topic.lecture_topics.all()
+        # Ensure lecture topics exist for the sub-topic
+        with transaction.atomic():
+            outlines = list(
+                LectureTopic.objects
+                .select_for_update()
+                .filter(sub_topic=sub_topic)
+                .order_by("default_order")  
+            )
 
-        if not outlines_qs.exists():
-            # Generate lecture outline (response(AIMessage) -> [{"order": int, "title": str}...])
-            ai_response = generate_lecture_outline(sub_topic=sub_topic)
-            print(ai_response)
-            generated_outline = json.loads(ai_response.content)
+            # Generate lecture topics if they do not exist
+            if not outlines:
+                ai_response = generate_lecture_outline(sub_topic=sub_topic)
+                generated_outline = json.loads(ai_response.content)
 
-            try:
-                with transaction.atomic():
-                    if not LectureTopic.objects.filter(sub_topic=sub_topic).exists():
-                        for item in generated_outline:
-                            LectureTopic.objects.create(
-                                sub_topic=sub_topic,
-                                default_order=item['order'],
-                                title=item['title'],
-                            )
-            except IntegrityError:
-                pass
+                LectureTopic.objects.bulk_create([
+                    LectureTopic(
+                        sub_topic=sub_topic,
+                        default_order=item["order"],
+                        title=item["title"],
+                    ) for item in generated_outline
+                ])
 
-            outlines_qs = sub_topic.lecture_topics.all().order_by("default_order")
+                outlines = list(
+                    LectureTopic.objects
+                    .filter(sub_topic=sub_topic)
+                    .order_by("default_order")
+                )
 
-        # Create new session
-        session = create_new_lecture_session(user=request.user, sub_topic=sub_topic)
+        # Check for existing unfinished session
+        last_session = (
+            LectureSession.objects
+            .filter(
+                user=request.user,
+                sub_topic=sub_topic,
+                can_continue=True,
+                is_finished=False,
+            )
+            .order_by("-started_at")
+            .first()
+        )
+        if last_session:
+            session = last_session
+        else:
+            # Create new session
+            session = create_new_lecture_session(
+                user=request.user,
+                sub_topic=sub_topic
+            )
 
         md_text = "\n".join(
-            f"{outline.default_order}. {outline.title}" for outline in outlines_qs
+            f"{outline.default_order}. {outline.title}" for outline in outlines
         )
 
         context = {
@@ -168,6 +191,7 @@ class LectureReportView(LoginRequiredMixin, View):
         }
         return render(request, "lecture/lecture_report.html", context)
 
+
 class LectureFinishView(LoginRequiredMixin, View):
     def post(self, request, session_id):
         session = get_object_or_404(
@@ -175,3 +199,19 @@ class LectureFinishView(LoginRequiredMixin, View):
             id=session_id,
             user=request.user,
         )
+
+        can_continue = request.POST.get("can_continue") is not None
+
+        if can_continue:
+            LectureSession.objects.filter(
+                user=request.user,
+                sub_topic=session.sub_topic,
+                can_continue=True,
+            ).exclude(id=session.id).update(can_continue=False)
+
+            session.is_finished = False
+
+        session.can_continue = can_continue
+        session.save()
+
+        return redirect("task_management:learning_goal_detail", goal_id=session.sub_topic.learning_goal.id)
