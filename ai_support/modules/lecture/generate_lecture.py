@@ -6,14 +6,17 @@ from ai_support.ai_chain import (get_chat_model_for_lecture,
                                  get_chat_model_for_summary)
 from ai_support.modules.common.services import language_constraint
 from lecture.models import (LectureLog, LectureProgress, LectureSession,
-                            LectureTopic)
+                            LectureTopic,
+                            )
 
 from task_management.models import LearningSubTopic
 
 from .lecture_history import (LectureGenerationHistorybuilder,
                               LectureHistoryBuilder,
                               LectureReportHistoryBuilder,
-                              SummaryHistoryBuilder)
+                              LectureReportUpdateHistoryBuilder,
+                              SummaryHistoryBuilder,
+                              )
 
 GLOBAL_PERSONAL = (
     "You are an educational AI that provides structured, clear instruction.\n"
@@ -88,15 +91,18 @@ def generate_lecture(session: LectureSession, topic: LectureTopic) -> AIMessage:
     messages = [
         SystemMessage(content=(
             f"{GLOBAL_PERSONAL}\n\n"
+
             f"{language_constraint(language=session.user.user_language)}\n\n"
+
             "The output must follow the rules below.\n"
-            "- No greetings needed.\n"
+            "- There is no need to say hello or explain the next schedule.\n"
             "- Deliver a lecture to the user based on the current topic.\n"
             "- If you include examples such as programming code, they must be separated from the text.\n"
             "- Provide clear and concise explanations, and engage the user with questions."
         )),
         SystemMessage(content=(
             "You will need to deliver lectures on the following topics:\n"
+            f"Learning Goal: {session.sub_topic.learning_goal.title}\n"
             f"Main lecture topic: {session.sub_topic.title}\n"
             f"Current lecture topic: {topic.title}"
         )),
@@ -134,8 +140,11 @@ def generate_lecture_answer(session: LectureSession, user_input: str) -> AIMessa
         SystemMessage(content=(
             f"{GLOBAL_PERSONAL}\n"
             "Answer questions and guide the learner forward.\n\n"
+
             f"{COMMON_SAFETY_RULES}\n\n"
+
             f"{language_constraint(language=session.user.user_language)}\n\n"
+
             "Please respond based on the following rules.\n"
             "- Respond appropriately to the user's input while maintaining the context of the lecture.\n"
             "- If the user's response includes questions, answer them clearly and concisely.\n"
@@ -149,13 +158,15 @@ def generate_lecture_answer(session: LectureSession, user_input: str) -> AIMessa
 
 
 def generate_lecture_report(session: LectureSession) -> AIMessage:
-    llm = get_chat_model_for_summary()
+    llm = get_chat_model_for_lecture()
     history_builder = LectureReportHistoryBuilder()
     history_messages = history_builder.build_messages(session=session)
     messages = [
         SystemMessage(content=(
             f"{GLOBAL_PERSONAL}\n\n"
+
             f"{language_constraint(language=session.user.user_language)}\n\n"
+
             "The output must follow the rules below.\n"
             "- Summarize what the student learned, what was covered, what remains unclear, and suggest next steps.\n"
             "- Highlight key points and important concepts covered during the lecture.\n"
@@ -167,6 +178,33 @@ def generate_lecture_report(session: LectureSession) -> AIMessage:
         )),
         *history_messages,
         HumanMessage(content="Please generate a lecture report."),
+    ]
+    response = llm.invoke(messages)
+    return response
+
+
+def generate_update_report(session: LectureSession) -> AIMessage:
+    llm = get_chat_model_for_lecture()
+    history_builder = LectureReportUpdateHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n\n"
+
+            f"{language_constraint(language=session.user.user_language)}\n\n"
+
+            "The output must follow the rules below.\n"
+            "- Update the existing report to reflect new content covered in the latest lecture segment.\n"
+            "- Ensure the report remains coherent and comprehensive, integrating new information seamlessly.\n"
+            "- Highlight any new key points or important concepts introduced during the latest lecture segment.\n"
+            "- Suggest further reading or topics for the user to explore based on the updated lecture content.\n"
+            "- Write it for the learner, not for the AI."
+        )),
+        SystemMessage(content=(
+            f"Lecture Title: {session.sub_topic.title}\n"
+        )),
+        *history_messages,
+        HumanMessage(content="Please update the lecture report."),
     ]
     response = llm.invoke(messages)
     return response
