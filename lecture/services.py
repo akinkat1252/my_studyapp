@@ -1,10 +1,12 @@
+from datetime import timedelta
 from django.db import transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
 
 from ai_support.modules.lecture.generate_lecture import (
     generate_lecture, generate_lecture_answer, generate_lecture_report,
-    generate_lecture_summary)
+    generate_lecture_summary, generate_update_report,
+)
 
 from .models import LectureLog, LectureProgress, LectureSession
 
@@ -120,9 +122,18 @@ def finalize_lecture(session):
         current.save()
     
     # Save end time
-    now = timezone.now()
-    session.ended = now
-    session.save()
+    slice = session.time_slices.filter(ended_at__isnull=True).last()
+    if slice:
+        slice.ended_at = timezone.now()
+        slice.save()
+    
+    # Calculate total study time
+    total_time = timedelta()
+    for time_slice in session.time_slices.exclude(ended_at__isnull=True):
+        total_time += (time_slice.ended_at - time_slice.started_at)
+
+    session.duration_seconds = int(total_time.total_seconds())
+
 
     # Calculate total tokens used in the session
     total_tokens = (
@@ -132,9 +143,7 @@ def finalize_lecture(session):
     )
     session.total_tokens = total_tokens
 
-    total_time = (session.ended - session.started_at) if session.started_at and session.ended else None
-    session.duration_seconds = int(total_time.total_seconds()) if total_time else None
-
+    # Mark session as finished
     session.is_finished = True
     session.save()
 
@@ -144,7 +153,10 @@ def create_lecture_report(session):
 
     if not ai_response:
         raise ValueError("Failed to generate lecture report.")
-    
+
+    # Update session with report and last log id
+    last_log = session.logs.order_by("id").last()
+    session.last_report_log_id = last_log.id if last_log else None
     session.report = ai_response.content
     session.save()
     
@@ -153,7 +165,30 @@ def create_lecture_report(session):
     report = {
         "generated_report": ai_response.content,
         "total_tokens": session.total_tokens,
-        "study_time_seconds": session.duration_seconds,
+        "total_study_time_seconds": session.duration_seconds,
+        "completed": True if not next_progress else False,
+    }
+    return report
+
+
+def update_lecture_report(session):
+    ai_response = generate_update_report(session=session)
+
+    if not ai_response:
+        raise ValueError("Failed to generate lecture report.")
+
+    # Update session with report and last log id
+    last_log = session.logs.order_by("id").last()
+    session.last_report_log_id = last_log.id if last_log else None
+    session.report = ai_response.content
+    session.save()
+
+    next_progress = get_current_lecture_progress(session)   
+
+    report = {
+        "generated_report": ai_response.content,
+        "total_tokens": session.total_tokens,
+        "total_study_time_seconds": session.duration_seconds,
         "completed": True if not next_progress else False,
     }
     return report

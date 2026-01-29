@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 
 from config import settings_common
 
@@ -25,9 +26,7 @@ class LectureSession(models.Model):
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     report = models.TextField(blank=True)
     total_tokens = models.PositiveBigIntegerField(default=0)
-    # raw timeline fields
-    started_at = models.DateTimeField(auto_now_add=True)
-    ended = models.DateTimeField(null=True, blank=True)
+    last_report_log_id = models.PositiveBigIntegerField(null=True, blank=True)
     # lecture state
     is_finished = models.BooleanField(default=False)
     can_continue = models.BooleanField(default=False)
@@ -120,3 +119,27 @@ class LectureProgress(models.Model):
 
     def __str__(self):
         return f'Lecture Progress: Session {self.session.id} - Topic {self.order}'
+    
+
+class LectureSessionSlice(models.Model):
+    session = models.ForeignKey(
+        LectureSession,
+        on_delete=models.CASCADE,
+        related_name='time_slices',
+    )
+    started_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["session"],
+                condition=Q(ended_at__isnull=True),
+                name="one_open_slice_per_session",
+            )
+        ]
+        verbose_name = "Lecture Session Slice"
+        verbose_name_plural = "Lecture Session Slices"
+
+    def __str__(self):
+        return f'Lecture Session Slice: Session {self.session.id} from {self.started_at:%Y-%m-%d %H:%M} to {self.ended_at:%Y-%m-%d %H:%M}'

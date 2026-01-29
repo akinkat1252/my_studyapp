@@ -14,10 +14,12 @@ from ai_support.modules.lecture.generate_lecture import \
     generate_lecture_outline
 from task_management.models import LearningMainTopic, LearningSubTopic
 
-from .models import LectureLog, LectureProgress, LectureSession, LectureTopic
+from .models import LectureLog, LectureProgress, LectureSession, LectureTopic, LectureSessionSlice
 from .services import (advance_lecture, create_lecture_report,
                        create_new_lecture_session, finalize_lecture,
-                       get_current_lecture_progress, handle_lecture_chat)
+                       get_current_lecture_progress, handle_lecture_chat,
+                       update_lecture_report,
+                       )
 
 
 # Create your views here.
@@ -68,7 +70,7 @@ class LectureStartView(LoginRequiredMixin, View):
                 can_continue=True,
                 is_finished=False,
             )
-            .order_by("-started_at")
+            .order_by("-id")
             .first()
         )
         if last_session:
@@ -83,6 +85,9 @@ class LectureStartView(LoginRequiredMixin, View):
         md_text = "\n".join(
             f"{outline.default_order}. {outline.title}" for outline in outlines
         )
+
+        # Save the start time of the lecture
+        LectureSessionSlice.objects.create(session=session)
 
         context = {
             "session": session,
@@ -168,8 +173,13 @@ class LectureReportView(LoginRequiredMixin, View):
 
         _display_time = 60
 
+        # generate or update report as needed
+        latest_log = session.logs.order_by("-id").last()
+
         if not session.report:
             lecture_report = create_lecture_report(session=session)
+        elif latest_log and session.last_report_log_id != latest_log.id:
+            lecture_report = update_lecture_report(session=session)
         else:
             next_progress = get_current_lecture_progress(session=session)
             lecture_report = {
@@ -186,7 +196,7 @@ class LectureReportView(LoginRequiredMixin, View):
             "progresses": progresses,
             "report_content": html_content,
             "total_tokens": lecture_report["total_tokens"],
-            "study_time_min": round(lecture_report["study_time_seconds"] / _display_time, 1),
+            "total_study_time_min": round(lecture_report["total_study_time_seconds"] / _display_time, 1),
             "completed": lecture_report["completed"],
         }
         return render(request, "lecture/lecture_report.html", context)
