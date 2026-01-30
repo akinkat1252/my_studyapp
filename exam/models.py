@@ -5,23 +5,50 @@ from config import settings_common
 
 
 # Create your models here.
-class ExamSession(models.Model):
-    FORMAT_CHOICES = [
-        ('mcq', 'MCQ'),  # Multiple choice Quiz
-        ('wt', 'WT'),  # Written Task
-        ('ct', 'CT'),  # Conprehensive Test
+class ExamType(models.Model):
+    TARGET_CHOICES = [
+        ("goal", "Learning Goal"),
+        ("main_topic", "Main Topic"),
+        ("sub_topic", "Sub Topic"),
     ]
-    QUESTION_DEFAULTS = {
-        'mcq': 10,
-        'wt': 1,
-        'ct': 3,
-    }
+    FLOW_CHOICES = [
+        ("per_question", "Per Question"),
+        ("batch", "Batch Evaluation"),
+    ]
+    SCORING_METHOD_CHOICES = [
+        ("binary", "Binary (Correct/Incorrect)"),
+        ("rubric", "Rubric Based"),
+        ("rubric_heavy", "Advanced Rubric"),
+    ]
 
+    code = models.CharField(max_length=30, unique=True)
+    name= models.CharField(max_length=100)
+
+    target_level = models.CharField(max_length=20, choices=TARGET_CHOICES)
+    flow_type = models.CharField(max_length=20, choices=FLOW_CHOICES)
+    scoring_method = models.CharField(max_length=20, choices=SCORING_METHOD_CHOICES)
+
+    default_questions = models.PositiveIntegerField()
+    max_score_per_question = models.PositiveIntegerField()
+
+    allow_post_chat = models.BooleanField(default=False)
+
+    is_active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def max_total_score(self):
+        return self.default_questions * self.max_score_per_question
+    
+    def __str__(self):
+        return f'Exam Type: {self.name} ({self.code})'
+
+
+class ExamSession(models.Model):
     user = models.ForeignKey(
         settings_common.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
-
     # Must be linked to a learning goal, main topic, or sub topic.
     learning_goal = models.ForeignKey(
         'task_management.LearningGoal',
@@ -37,6 +64,7 @@ class ExamSession(models.Model):
         null=True,
         related_name='exam_sessions',
     )
+
     sub_topic = models.ForeignKey(
         'task_management.LearningSubTopic',
         on_delete=models.CASCADE,
@@ -44,92 +72,62 @@ class ExamSession(models.Model):
         null=True,
         related_name='exam_sessions',
     )
+    exam_type = models.ForeignKey(
+        ExamType,
+        on_delete=models.PROTECT,
+        related_name='exam_sessions',
+    )
 
-    format = models.CharField(max_length=10, choices=FORMAT_CHOICES)
     attempt_number = models.PositiveIntegerField(default=0)
     current_question_number = models.PositiveIntegerField(default=0)
     max_questions = models.PositiveIntegerField(default=0)
     summary = models.TextField(default='', blank=True)
-    used_tokens = models.PositiveBigIntegerField(default=0)
-    total_score = models.FloatField(default=0)
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Exam Session'
         verbose_name_plural = 'Exam Sessions'
-        constraints = [
-            # # CT → must be linked to learning_goal
-            models.UniqueConstraint(
-                fields=['user', 'learning_goal', 'attempt_number'],
-                condition=models.Q(format='ct', learning_goal__isnull=False),
-                name='unique_ct_attempt_per_goal',
-            ),
-
-            # MCQ / WT for main_topic
-            models.UniqueConstraint(
-                fields=['user', 'main_topic', 'attempt_number'],
-                condition=models.Q(format='mcq', main_topic__isnull=False),
-                name='unique_mcq_attempt_per_main_topic',
-            ),
-            models.UniqueConstraint(
-                fields=['user', 'main_topic', 'attempt_number'],
-                condition=models.Q(format='wt', main_topic__isnull=False),
-                name='unique_wt_attempt_per_main_topic',
-            ),
-
-            # MCQ / WT for sub_topic
-            models.UniqueConstraint(
-                fields=['user', 'sub_topic', 'attempt_number'],
-                condition=models.Q(format='mcq', sub_topic__isnull=False),
-                name='unique_mcq_attempt_per_sub_topic',
-            ),
-            models.UniqueConstraint(
-                fields=['user', 'sub_topic', 'attempt_number'],
-                condition=models.Q(format='wt', sub_topic__isnull=False),
-                name='unique_wt_attempt_per_sub_topic',
-            ),
-        ]
 
     def clean(self):
-        # MCQ / WT must have either main_topic or sub_topic (but not both)
-        if self.format in ('mcq', 'wt'):
-            if bool(self.main_topic) == bool(self.sub_topic):
-                raise ValidationError('Please specify either main_topic or sub_topic, not both.')
-            if self.learning_goal:
-                raise ValidationError('MCQ/WT must not be linked to a learning goal.')
-        # CT must link ONLY to learning_goal
-        if self.format == 'ct':
-            if not self.learning_goal or self.main_topic or self.sub_topic:
-                raise ValidationError('CT format must be linked only to a learning goal.')
+        target_level = self.exam_type.target_level
+
+        if target_level == "goal" and not self.learning_goal:
+            raise ValidationError("Goal exam must link to learning_goal.")
+
+        if target_level == "main_topic" and not self.main_topic:
+            raise ValidationError("Main Topic exam must link to main_topic.")
+
+        if target_level == "sub_topic" and not self.sub_topic:
+            raise ValidationError("Sub Topic exam must link to sub_topic.")
 
     def save(self, *args, **kwargs):
         self.full_clean()
         
         if self.pk is None:
             # Decide the number of questions when creating the first one
-            self.max_questions = self.QUESTION_DEFAULTS.get(self.format, 0)
+            self.max_questions = self.exam_type.default_questions
+
+            # Determine attempt_number
+            with transaction.atomic():
+                last_attempt = (
+                    ExamSession.objects
+                    .select_for_update()
+                    .filter(
+                        user=self.user,
+                        learning_goal=self.learning_goal,
+                        main_topic=self.main_topic,
+                        sub_topic=self.sub_topic,
+                        exam_type=self.exam_type,
+                    )
+                    .aggregate(max_attempt=models.Max('attempt_number'))['max_attempt'] or 0
+                )
+                self.attempt_number = last_attempt + 1
         super().save(*args, **kwargs)
 
-    def recalculation_used_tokens(self):
-        log_tokens = self.logs.aggregate(total=models.Sum('token_count'))['total'] or 0
-        eval_tokens = ExamEvaluation.objects.filter(
-            exam_log__session=self
-        ).aggregate(total=models.Sum('token_count'))['total'] or 0
-
-        self.used_tokens = log_tokens + eval_tokens
-        self.save(update_fields=['used_tokens'])
-
     def __str__(self):
-        topic_label = None
-        if self.learning_goal:
-            topic_label = f'{self.learning_goal.title}'
-        elif self.main_topic:
-            topic_label = f'{self.main_topic.title}'
-        elif self.sub_topic:
-            topic_label = f'{self.sub_topic.title}'
-        else:
-            topic_label = 'No Topic'
-        return f'Exam Session: [{self.get_format_display()}] {topic_label} (Attempt {self.attempt_number})'
+        target = self.learning_goal or self.main_topic or self.sub_topic
+        return f'Exam Session: [{self.exam_type.code}] {target} (Attempt {self.attempt_number})'
     
 
 class ExamLog(models.Model):
@@ -138,6 +136,7 @@ class ExamLog(models.Model):
         on_delete=models.CASCADE,
         related_name='logs',
     )
+
     question_number = models.PositiveIntegerField(default=0)
     question = models.TextField(default='')
     answer = models.TextField(blank=True)
@@ -182,6 +181,7 @@ class ExamEvaluation(models.Model):
         on_delete=models.CASCADE,
         related_name='evaluation',
     )
+
     score = models.FloatField(default=0)
     feedback = models.TextField(default='')
     token_count = models.PositiveIntegerField(default=0)
@@ -193,3 +193,28 @@ class ExamEvaluation(models.Model):
         
     def __str__(self):
         return f'Exam Evaluation: {self.exam_log} (Score:{self.score})'
+
+
+class ExamResult(models.Model):
+    session = models.OneToOneField(
+        ExamSession,
+        on_delete=models.CASCADE,
+        related_name='result',
+    )
+
+    total_score = models.FloatField(default=0)
+    max_score = models.FloatField(default=0)
+    accuracy_rate = models.FloatField(null=True, blank=True)
+    # snapshot for result screen
+    duration_seconds = models.PositiveIntegerField(null=True, blank=True)
+    used_tokens = models.PositiveBigIntegerField(default=0)
+    report = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Exam Result'
+        verbose_name_plural = 'Exam Results'
+
+    def __str__(self):
+        return f'Exam Result: {self.session} (Total Score:{self.total_score}/)'

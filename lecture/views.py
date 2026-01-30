@@ -184,8 +184,8 @@ class LectureReportView(LoginRequiredMixin, View):
             next_progress = get_current_lecture_progress(session=session)
             lecture_report = {
                 "generated_report": session.report,
-                "total_tokens": session.total_tokens,
-                "study_time_seconds": session.duration_seconds,
+                "used_tokens": session.used_tokens,
+                "total_study_time_seconds": session.duration_seconds,
                 "completed": True if not next_progress else False,
             }
         
@@ -195,7 +195,7 @@ class LectureReportView(LoginRequiredMixin, View):
             "session": session,
             "progresses": progresses,
             "report_content": html_content,
-            "total_tokens": lecture_report["total_tokens"],
+            "used_tokens": lecture_report["used_tokens"],
             "total_study_time_min": round(lecture_report["total_study_time_seconds"] / _display_time, 1),
             "completed": lecture_report["completed"],
         }
