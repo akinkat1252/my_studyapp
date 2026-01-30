@@ -1,0 +1,77 @@
+[
+    {
+        "model": "exam.examtype",
+        "pk": 1,
+        "fields": {
+            "code": "mcq_sub",
+            "name": "MCQ Sub Topic Exam",
+            "target_level": "sub_topic",
+            "flow_type": "per_question",
+            "scoring_method": "binary",
+            "default_questions": 5,
+            "max_score_per_question": 1,
+            "is_active": true,
+            "created_at": "2026-01-30T00:00:00Z"
+        }
+    },
+    {
+        "model": "exam.examtype",
+        "pk": 2,
+        "fields": {
+            "code": "mcq_main",
+            "name": "MCQ Main Topic Exam",
+            "target_level": "main_topic",
+            "flow_type": "batch",
+            "scoring_method": "binary",
+            "default_questions": 10,
+            "max_score_per_question": 1,
+            "is_active": true,
+            "created_at": "2026-01-30T00:00:00Z"
+        }
+    },
+    {
+        "model": "exam.examtype",
+        "pk": 3,
+        "fields": {
+            "code": "wt_sub",
+            "name": "WT Sub Topic Exam",
+            "target_level": "sub_topic",
+            "flow_type": "per_question",
+            "scoring_method": "rubric",
+            "default_questions": 1,
+            "max_score_per_question": 20,
+            "is_active": true,
+            "created_at": "2026-01-30T00:00:00Z"
+        }
+    },
+    {
+        "model": "exam.examtype",
+        "pk": 4,
+        "fields": {
+            "code": "wt_main",
+            "name": "WT Main Topic Exam",
+            "target_level": "main_topic",
+            "flow_type": "per_question",
+            "scoring_method": "rubric",
+            "default_questions": 5,
+            "max_score_per_question": 20,
+            "is_active": true,
+            "created_at": "2026-01-30T00:00:00Z"
+        }
+    },
+    {
+        "model": "exam.examtype",
+        "pk": 5,
+        "fields": {
+            "code": "ct_goal",
+            "name": "CT Exam",
+            "target_level": "goal",
+            "flow_type": "per_question",
+            "scoring_method": "rubric_heavy",
+            "default_questions": 1,
+            "max_score_per_question": 100,
+            "is_active": true,
+            "created_at": "2026-01-30T00:00:00Z"
+        }
+    }
+]

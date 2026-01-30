@@ -141,7 +141,7 @@ def finalize_lecture(session):
         .aggregate(total=Sum('token_count'))['total']
         or 0
     )
-    session.total_tokens = total_tokens
+    session.used_tokens = total_tokens
 
     # Mark session as finished
     session.is_finished = True
@@ -164,7 +164,7 @@ def create_lecture_report(session):
 
     report = {
         "generated_report": ai_response.content,
-        "total_tokens": session.total_tokens,
+        "used_tokens": session.used_tokens,
         "total_study_time_seconds": session.duration_seconds,
         "completed": True if not next_progress else False,
     }
@@ -187,7 +187,7 @@ def update_lecture_report(session):
 
     report = {
         "generated_report": ai_response.content,
-        "total_tokens": session.total_tokens,
+        "used_tokens": session.used_tokens,
         "total_study_time_seconds": session.duration_seconds,
         "completed": True if not next_progress else False,
     }

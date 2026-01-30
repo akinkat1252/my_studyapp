@@ -25,11 +25,12 @@ class LectureSession(models.Model):
     # snapshot for result screen
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     report = models.TextField(blank=True)
-    total_tokens = models.PositiveBigIntegerField(default=0)
-    last_report_log_id = models.PositiveBigIntegerField(null=True, blank=True)
+    used_tokens = models.PositiveBigIntegerField(default=0)
     # lecture state
+    last_report_log_id = models.PositiveBigIntegerField(null=True, blank=True)
     is_finished = models.BooleanField(default=False)
     can_continue = models.BooleanField(default=False)
+
 
     class Meta:
         verbose_name = "Lecture Session"
