@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
+from django.db.models import Q, Max, Sum
 
 from config import settings_common
 
@@ -33,8 +35,17 @@ class ExamType(models.Model):
 
     allow_post_chat = models.BooleanField(default=False)
 
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["is_active"]),
+        ]
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     @property
     def max_total_score(self):
@@ -45,32 +56,35 @@ class ExamType(models.Model):
 
 
 class ExamSession(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("in_progress", "In Progress"),
+        ("evaluating", "Evaluating"),
+        ("finished", "Finished"),
+        ("aborted", "Aborted"),
+    ]
+
     user = models.ForeignKey(
         settings_common.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
-    # Must be linked to a learning goal, main topic, or sub topic.
     learning_goal = models.ForeignKey(
         'task_management.LearningGoal',
         on_delete=models.CASCADE,
-        blank=True,
         null=True,
-        related_name='exam_sessions',
+        blank=True,
     )
     main_topic = models.ForeignKey(
         'task_management.LearningMainTopic',
         on_delete=models.CASCADE,
-        blank=True,
         null=True,
-        related_name='exam_sessions',
+        blank=True,
     )
-
     sub_topic = models.ForeignKey(
         'task_management.LearningSubTopic',
         on_delete=models.CASCADE,
-        blank=True,
         null=True,
-        related_name='exam_sessions',
+        blank=True,
     )
     exam_type = models.ForeignKey(
         ExamType,
@@ -78,79 +92,175 @@ class ExamSession(models.Model):
         related_name='exam_sessions',
     )
 
-    attempt_number = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    attempt_number = models.PositiveIntegerField()
     current_question_number = models.PositiveIntegerField(default=0)
     max_questions = models.PositiveIntegerField(default=0)
     summary = models.TextField(default='', blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Exam Session'
         verbose_name_plural = 'Exam Sessions'
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    Q(learning_goal__isnull=False, main_topic__isnull=True, sub_topic__isnull=True) |
+                    Q(learning_goal__isnull=True, main_topic__isnull=False, sub_topic__isnull=True) |
+                    Q(learning_goal__isnull=True, main_topic__isnull=True, sub_topic__isnull=False)
+                ),
+                name='only_one_exam_target_set',
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'learning_goal', 'exam_type', 'attempt_number'],
+                condition=Q(learning_goal__isnull=False),
+                name='unique_user-goal_attempt',
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'main_topic', 'exam_type', 'attempt_number'],
+                condition=Q(main_topic__isnull=False),
+                name='unique_user-main_topic_attempt',
+            ),
+            models.UniqueConstraint(
+                fields=['user', 'sub_topic', 'exam_type', 'attempt_number'],
+                condition=Q(sub_topic__isnull=False),
+                name='unique_user-sub_topic_attempt',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "learning_goal", "exam_type"]),
+            models.Index(fields=["user", "main_topic", "exam_type"]),
+            models.Index(fields=["user", "sub_topic", "exam_type"]),
+            models.Index(fields=["user", "created_at"]),
+            models.Index(fields=["exam_type", "created_at"]),
+        ]
 
     def clean(self):
-        target_level = self.exam_type.target_level
+        super().clean()
 
-        if target_level == "goal" and not self.learning_goal:
-            raise ValidationError("Goal exam must link to learning_goal.")
+        if self.exam_type.target_level == "goal" and not self.learning_goal:
+            raise ValidationError({
+                "learning_goal": "Learning Goal must be set for this exam type."
+            })
+        if self.exam_type.target_level == "main_topic" and not self.main_topic:
+            raise ValidationError({
+                "main_topic": "Main Topic must be set for this exam type."
+            })
+        if self.exam_type.target_level == "sub_topic" and not self.sub_topic:
+            raise ValidationError({
+                "sub_topic": "Sub Topic must be set for this exam type."
+            })
 
-        if target_level == "main_topic" and not self.main_topic:
-            raise ValidationError("Main Topic exam must link to main_topic.")
-
-        if target_level == "sub_topic" and not self.sub_topic:
-            raise ValidationError("Sub Topic exam must link to sub_topic.")
 
     def save(self, *args, **kwargs):
-        self.full_clean()
-        
-        if self.pk is None:
-            # Decide the number of questions when creating the first one
-            self.max_questions = self.exam_type.default_questions
+        is_new = self.pk is None
+    
+        with transaction.atomic():
 
-            # Determine attempt_number
-            with transaction.atomic():
-                last_attempt = (
-                    ExamSession.objects
-                    .select_for_update()
-                    .filter(
+            if is_new:
+
+                if self.learning_goal:
+                    qs = ExamSession.objects.select_for_update().filter(
                         user=self.user,
                         learning_goal=self.learning_goal,
+                        exam_type=self.exam_type,
+                    )
+                elif self.main_topic:
+                    qs = ExamSession.objects.select_for_update().filter(
+                        user=self.user,
                         main_topic=self.main_topic,
+                        exam_type=self.exam_type,
+                    )
+                elif self.sub_topic:
+                    qs = ExamSession.objects.select_for_update().filter(
+                        user=self.user,
                         sub_topic=self.sub_topic,
                         exam_type=self.exam_type,
                     )
-                    .aggregate(max_attempt=models.Max('attempt_number'))['max_attempt'] or 0
+                else:
+                    raise ValidationError("At least one target (learning_goal, main_topic, sub_topic) must be set.")
+            
+                # Determine attempt_number
+                last_attempt = (
+                    qs.aggregate(max_attempt=Max('attempt_number'))['max_attempt'] or 0
                 )
+
                 self.attempt_number = last_attempt + 1
-        super().save(*args, **kwargs)
+                self.max_questions = self.exam_type.default_questions
+
+            self.full_clean()
+            super().save(*args, **kwargs)
+
+    @property
+    def calculated_total_score(self):
+        return (
+            self.questions
+            .filter(evaluation__isnull=False)
+            .aggregate(total_score=Sum('evaluation__score'))['total_score'] or 0
+        )
+    
+    @property
+    def calculated_max_score(self):
+        return self.max_questions * self.exam_type.max_score_per_question
+
+    @property
+    def calculated_accuracy_rate(self):
+        max_score = self.calculated_max_score
+        if max_score == 0:
+            return None
+        return self.calculated_total_score / max_score
+
 
     def __str__(self):
-        target = self.learning_goal or self.main_topic or self.sub_topic
-        return f'Exam Session: [{self.exam_type.code}] {target} (Attempt {self.attempt_number})'
-    
+        if self.learning_goal:
+            target = f"goal:{self.learning_goal.id}"
+        elif self.main_topic:
+            target = f"main:{self.main_topic.id}"
+        else:
+            target = f"sub:{self.sub_topic.id}"
 
-class ExamLog(models.Model):
+        return f"ExamSession [{self.exam_type.code}] {target} (Attempt {self.attempt_number})"
+
+
+class ExamQuestion(models.Model):
+    STATUS_CHOICES = [
+        ("initialized", "Initialized"),
+        ("generated", "Generated"),
+        ("answered", "Answered"),
+        ("evaluated", "Evaluated"),
+        ("skipped", "Skipped"),
+    ]
+
     session = models.ForeignKey(
         ExamSession,
         on_delete=models.CASCADE,
-        related_name='logs',
+        related_name='questions',
     )
 
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="initialized")
     question_number = models.PositiveIntegerField(default=0)
-    question = models.TextField(default='')
-    answer = models.TextField(blank=True)
+    question = models.TextField()
+    max_score = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)],
+    )
     token_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Exam Log'
-        verbose_name_plural = 'Exam Logs'
+        verbose_name = 'Exam Question'
+        verbose_name_plural = 'Exam Questions'
         constraints = [
             models.UniqueConstraint(
                 fields=['session', 'question_number'],
                 name='unique_session-question_number',
             ),
+        ]
+        indexes = [
+            models.Index(fields=["session"]),
+            models.Index(fields=["session", "question_number"]),
+            models.Index(fields=["status"]),
         ]
 
     def save(self, *args, **kwargs):
@@ -159,40 +269,81 @@ class ExamLog(models.Model):
         if is_new:
             with transaction.atomic():
                 last_number = (
-                    ExamLog.objects
-                    .select_for_update()
+                    ExamQuestion.objects
                     .filter(session=self.session)
+                    .select_for_update()
                     .aggregate(max_num=models.Max('question_number'))['max_num'] or 0
                 )
                 self.question_number = last_number + 1
+        self.full_clean()
         super().save(*args, **kwargs)
 
-        if is_new:
-            self.session.current_question_number = self.question_number
-            self.session.save(update_fields=['current_question_number'])
+        # Update current_question_number in ExamSession
+        ExamSession.objects.filter(pk=self.session_id).update(
+            current_question_number=self.question_number
+        )
 
     def __str__(self):
-        return f'Exam Log: {self.session} / No.{self.question_number}'
+        return f'Exam Question: {self.session} / No.{self.question_number}'
+
+
+class ExamAnswer(models.Model):
+    question = models.OneToOneField(
+        ExamQuestion,
+        on_delete=models.CASCADE,
+        related_name='answer',
+    )
+
+    answer = models.TextField()
+    token_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Exam Answer'
+        verbose_name_plural = 'Exam Answers'
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Exam Answer: {self.question} (Answer ID:{self.id})'
     
 
 class ExamEvaluation(models.Model):
-    exam_log = models.OneToOneField(
-        ExamLog,
+    question = models.OneToOneField(
+        ExamQuestion,
         on_delete=models.CASCADE,
         related_name='evaluation',
     )
 
-    score = models.FloatField(default=0)
-    feedback = models.TextField(default='')
+    score = models.FloatField(
+        validators=[MinValueValidator(0)],
+        default=0
+    )
+    feedback = models.TextField()
     token_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Exam Evaluation'
         verbose_name_plural = 'Exam Evaluations'
-        
+
+    def clean(self):
+        super().clean()
+
+        if self.question and self.score is not None:
+            if self.score > self.question.max_score:
+                raise ValidationError({
+                    "score": "Score cannot exceed the question's max score."
+                })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f'Exam Evaluation: {self.exam_log} (Score:{self.score})'
+        return f'Exam Evaluation: {self.question} (Score:{self.score})'
 
 
 class ExamResult(models.Model):
@@ -215,6 +366,38 @@ class ExamResult(models.Model):
     class Meta:
         verbose_name = 'Exam Result'
         verbose_name_plural = 'Exam Results'
+        indexes = [
+            models.Index(fields=["created_at"]),
+        ]
 
     def __str__(self):
-        return f'Exam Result: {self.session} (Total Score:{self.total_score}/)'
+        return f'Exam Result: {self.session} (Total Score:{self.total_score})'
+
+
+class ExamSessionSlice(models.Model):
+    session = models.ForeignKey(
+        ExamSession,
+        on_delete=models.CASCADE,
+        related_name='time_slices',
+    )
+    started_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Exam Session Slice'
+        verbose_name_plural = 'Exam Session Slices'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['session', ],
+                condition=Q(ended_at__isnull=True),
+                name="exam_session_one_open_slice_open_only",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["session"]),
+            models.Index(fields=["started_at"]),
+        ]
+
+
+    def __str__(self):
+        return f'Exam Session Slice: Session {self.session.id} from {self.started_at:%Y-%m-%d %H:%M} to {self.ended_at:%Y-%m-%d %H:%M}'

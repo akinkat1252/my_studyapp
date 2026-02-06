@@ -5,7 +5,7 @@ from django.views import View, generic
 
 from task_management.models import LearningMainTopic, LearningSubTopic
 
-from .models import ExamEvaluation, ExamLog, ExamSession
+from .models import ExamEvaluation, ExamSession
 
 
 # Create your views here.

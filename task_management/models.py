@@ -19,6 +19,10 @@ class Category(models.Model):
     class Meta:
         verbose_name = 'Category'
         verbose_name_plural = 'Categories'
+        indexes = [
+            models.Index(fields=["owner"]),
+            models.Index(fields=["is_global"]),
+        ]
 
     def __str__(self):
         return self.name
@@ -38,11 +42,15 @@ class UserInterestCategory(models.Model):
     )
 
     class Meta:
+        verbose_name = 'User Interest Category'
+        verbose_name_plural = 'User Interest Categories'
         constraints = [
             models.UniqueConstraint(fields=['user', 'category'], name='unique_user_category')
         ]
-        verbose_name = 'User Interest Category'
-        verbose_name_plural = 'User Interest Categories'
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["category"]),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.category.name}"
@@ -74,6 +82,12 @@ class DraftLearningGoal(models.Model):
     class Meta:
         verbose_name = 'Draft Learning Goal'
         verbose_name_plural = 'Draft Learning Goals'
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["category"]),
+            models.Index(fields=["is_finalized"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     def __str__(self):
         return f'DraftLearningGoal: {self.title} by {self.user.username}'
@@ -111,6 +125,11 @@ class LearningGoal(models.Model):
     class Meta:
         verbose_name = 'Learning Goal'
         verbose_name_plural = 'Learning Goals'
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["category"]),
+            models.Index(fields=["created_at"]),
+        ]
 
     # Obtain the total study time for each learning goal
     @property
@@ -155,6 +174,11 @@ class LearningMainTopic(models.Model):
     class Meta:
         verbose_name = 'Learning Main Topic'
         verbose_name_plural = 'Learning Main Topics'
+        indexes = [
+            models.Index(fields=["user"]),
+            models.Index(fields=["learning_goal"]),
+            models.Index(fields=["status"]),
+        ]
 
     def __str__(self):
         return f'MainTopic: {self.title} for {self.learning_goal.title}'
@@ -168,16 +192,6 @@ class LearningSubTopic(models.Model):
         ('completed', 'Completed'),
     ]
 
-    user = models.ForeignKey(
-        settings_common.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='learning_sub_topics'
-    )
-    learning_goal = models.ForeignKey(
-        LearningGoal,
-        on_delete=models.CASCADE,
-        related_name='sub_topics'
-    )
     main_topic = models.ForeignKey(
         LearningMainTopic,
         on_delete=models.CASCADE,
@@ -196,12 +210,10 @@ class LearningSubTopic(models.Model):
     class Meta:
         verbose_name = 'Learning Sub Topic'
         verbose_name_plural = 'Learning Sub Topics'
-
-    def save(self, *args, **kwargs):
-        if self.main_topic:
-            self.learning_goal = self.main_topic.learning_goal
-            self.user = self.main_topic.user
-        super().save(*args, **kwargs)
+        indexes = [
+            models.Index(fields=["main_topic"]),
+            models.Index(fields=["status"]),
+        ]
 
     def __str__(self):
         return f'SubTopic: {self.title} for {self.main_topic.title}'

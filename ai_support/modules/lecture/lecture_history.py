@@ -7,6 +7,7 @@ ROLE_MAP = {
     "user": HumanMessage,
 }
 
+# for generate lecture (History: summary)
 class LectureGenerationHistorybuilder(BaseHistoryBuilder):
     def build_system_context(self, session):
         if not session.summary:
@@ -24,7 +25,7 @@ class LectureGenerationHistorybuilder(BaseHistoryBuilder):
         return []
     
 
-# for AI responses generation
+# for Chat (History: summary + 5 latest logs)
 class LectureHistoryBuilder(BaseHistoryBuilder):
     def build_system_context(self, session):
         if not session.summary:
@@ -56,7 +57,7 @@ class LectureHistoryBuilder(BaseHistoryBuilder):
         return messages
 
 
-# for summary generation
+# for summary generation (History: summary + 1 latest log)
 class SummaryHistoryBuilder(BaseHistoryBuilder):
     def build_system_context(self, session):
         if not session.summary:
@@ -89,7 +90,7 @@ class SummaryHistoryBuilder(BaseHistoryBuilder):
         return messages
 
 
-# for final report generation (new)
+# for final report generation (History: all logs)
 class LectureReportHistoryBuilder(BaseHistoryBuilder):
     def build_system_context(self, session):
         return []
@@ -105,7 +106,7 @@ class LectureReportHistoryBuilder(BaseHistoryBuilder):
         return messages
 
 
-# for report update generation
+# for report update generation (History: report + diff logs)
 class LectureReportUpdateHistoryBuilder(BaseHistoryBuilder):
     def build_system_context(self, session):
         if not session.report:
