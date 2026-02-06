@@ -35,12 +35,18 @@ class LectureSession(models.Model):
     class Meta:
         verbose_name = "Lecture Session"
         verbose_name_plural = "Lecture Sessions"
-        ordering = ["user", "sub_topic", "lecture_number"]
+        ordering = ["lecture_number"]
         constraints = [
             models.UniqueConstraint(
                 fields=["user", "sub_topic", "lecture_number"],
                 name="unique_lecture_number_per_topic",
             ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "sub_topic"]),
+            models.Index(fields=["user"]),
+            models.Index(fields=["is_finished"]),
+            models.Index(fields=["can_continue"]),
         ]
 
     def __str__(self):
@@ -63,6 +69,11 @@ class LectureLog(models.Model):
     message = models.TextField(blank=True)
     token_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["session", "created_at"]),
+        ]
 
     def __str__(self):
         return f'Lecture Log: {self.role} - {self.message[:20]}'
@@ -88,6 +99,9 @@ class LectureTopic(models.Model):
                 name="unique_topic_default_order_per_sub_topic",
             ),
         ]
+        indexes = [
+            models.Index(fields=["sub_topic"]),
+        ]
 
     def __str__(self):
         return f"LectureTopic {self.default_order}: {self.title}"
@@ -104,7 +118,6 @@ class LectureProgress(models.Model):
         on_delete=models.CASCADE,
         related_name='progress_records',
     )
-    order = models.PositiveIntegerField()
     is_completed = models.BooleanField(default=False)
     started_at = models.DateTimeField(auto_now_add=True)
 
@@ -117,9 +130,13 @@ class LectureProgress(models.Model):
                 name="unique_progress_per_session_and_topic",
             ),
         ]
+        indexes = [
+            models.Index(fields=["session", "is_completed"]),
+            models.Index(fields=["topic"]),
+        ]
 
     def __str__(self):
-        return f'Lecture Progress: Session {self.session.id} - Topic {self.order}'
+        return f'Lecture Progress: Session {self.session.id} - Topic {self.topic.title}'
     
 
 class LectureSessionSlice(models.Model):
@@ -136,11 +153,15 @@ class LectureSessionSlice(models.Model):
             models.UniqueConstraint(
                 fields=["session"],
                 condition=Q(ended_at__isnull=True),
-                name="one_open_slice_per_session",
+                name="lecture_session_one_open_slice_open_only",
             )
         ]
         verbose_name = "Lecture Session Slice"
         verbose_name_plural = "Lecture Session Slices"
+        indexes = [
+            models.Index(fields=["session", "ended_at"]),
+            models.Index(fields=["started_at"]),
+        ]
 
     def __str__(self):
         return f'Lecture Session Slice: Session {self.session.id} from {self.started_at:%Y-%m-%d %H:%M} to {self.ended_at:%Y-%m-%d %H:%M}'
