@@ -321,6 +321,7 @@ class ExamEvaluation(models.Model):
         validators=[MinValueValidator(0)],
         default=0
     )
+    detail_scores = models.JSONField(null=True, blank=True)
     feedback = models.TextField()
     token_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -352,11 +353,10 @@ class ExamResult(models.Model):
         on_delete=models.CASCADE,
         related_name='result',
     )
-
-    total_score = models.FloatField(default=0)
     max_score = models.FloatField(default=0)
-    accuracy_rate = models.FloatField(null=True, blank=True)
     # snapshot for result screen
+    total_score = models.FloatField(default=0)
+    accuracy_rate = models.FloatField(null=True, blank=True)
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     used_tokens = models.PositiveBigIntegerField(default=0)
     report = models.TextField(blank=True)
