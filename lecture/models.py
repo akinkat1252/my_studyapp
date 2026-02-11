@@ -164,4 +164,5 @@ class LectureSessionSlice(models.Model):
         ]
 
     def __str__(self):
-        return f'Lecture Session Slice: Session {self.session.id} from {self.started_at:%Y-%m-%d %H:%M} to {self.ended_at:%Y-%m-%d %H:%M}'
+        to_time = self.ended_at.strftime("%Y-%m-%d %H:%M") if self.ended_at else "OPEN"
+        return f'Lecture Session Slice: Session {self.session.id} from {self.started_at:%Y-%m-%d %H:%M} to {to_time}'

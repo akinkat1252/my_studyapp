@@ -126,7 +126,7 @@ class LectureReportUpdateHistoryBuilder(BaseHistoryBuilder):
         # Get the latest log
         latest_log = session.logs.order_by("-id").last()
         if latest_log and session.last_report_log_id:
-            diff_log = (
+            diff_logs = (
                 session.logs
                 .filter(role__in=['ai', 'user'],
                         id__gt=session.last_report_log_id,
@@ -134,10 +134,10 @@ class LectureReportUpdateHistoryBuilder(BaseHistoryBuilder):
                 .order_by("-created_at")
             )
 
-        if diff_log:
-            msg_class = ROLE_MAP.get(diff_log.role)
+        for log in diff_logs:
+            msg_class = ROLE_MAP.get(log.role)
             if msg_class:
-                messages.append(msg_class(content=diff_log.message))
+                messages.append(msg_class(content=log.message))
 
         return messages
 
