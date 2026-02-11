@@ -1,5 +1,6 @@
+from decimal import Decimal, ROUND_HALF_UP
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models, transaction
 from django.db.models import Q, Max, Sum
 
@@ -195,15 +196,19 @@ class ExamSession(models.Model):
 
     @property
     def calculated_total_score(self):
-        return (
+        total = (
             self.questions
             .filter(evaluation__isnull=False)
-            .aggregate(total_score=Sum('evaluation__score'))['total_score'] or 0
+            .aggregate(total_score=Sum('evaluation__score'))['total_score']
         )
+        return total if total is not None else Decimal("0")
     
     @property
     def calculated_max_score(self):
-        return self.max_questions * self.exam_type.max_score_per_question
+        return (
+            Decimal(self.max_questions) * 
+            Decimal(self.exam_type.max_score_per_question)
+        )
 
     @property
     def calculated_accuracy_rate(self):
@@ -251,6 +256,7 @@ class ExamQuestion(models.Model):
     class Meta:
         verbose_name = 'Exam Question'
         verbose_name_plural = 'Exam Questions'
+        get_latest_by = "created_at"
         constraints = [
             models.UniqueConstraint(
                 fields=['session', 'question_number'],
@@ -317,9 +323,10 @@ class ExamEvaluation(models.Model):
         related_name='evaluation',
     )
 
-    score = models.FloatField(
-        validators=[MinValueValidator(0)],
-        default=0
+    score = models.DecimalField(
+        max_digits=6,
+        decimal_places=3,
+        validators=[MinValueValidator(Decimal("0"))],
     )
     detail_scores = models.JSONField(null=True, blank=True)
     feedback = models.TextField()
@@ -334,7 +341,7 @@ class ExamEvaluation(models.Model):
         super().clean()
 
         if self.question and self.score is not None:
-            if self.score > self.question.max_score:
+            if self.score > Decimal(self.question.max_score):
                 raise ValidationError({
                     "score": "Score cannot exceed the question's max score."
                 })
@@ -353,10 +360,17 @@ class ExamResult(models.Model):
         on_delete=models.CASCADE,
         related_name='result',
     )
-    max_score = models.FloatField(default=0)
+    max_score = models.DecimalField(max_digits=6, decimal_places=3)
     # snapshot for result screen
-    total_score = models.FloatField(default=0)
-    accuracy_rate = models.FloatField(null=True, blank=True)
+    total_score = models.DecimalField(max_digits=6, decimal_places=3)
+    accuracy_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=4,
+        validators=[
+            MinValueValidator(Decimal("0")),
+            MaxValueValidator(Decimal("1")),
+        ],
+    )
     duration_seconds = models.PositiveIntegerField(null=True, blank=True)
     used_tokens = models.PositiveBigIntegerField(default=0)
     report = models.TextField(blank=True)
@@ -400,4 +414,6 @@ class ExamSessionSlice(models.Model):
 
 
     def __str__(self):
-        return f'Exam Session Slice: Session {self.session.id} from {self.started_at:%Y-%m-%d %H:%M} to {self.ended_at:%Y-%m-%d %H:%M}'
+        to_time = self.ended_at.strftime("%Y-%m-%d %H:%M") if self.ended_at else "OPEN"
+        return f'Exam Session Slice: Session {self.session.id} from {self.started_at:%Y-%m-%d %H:%M} to {to_time}'
+    
