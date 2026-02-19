@@ -21,7 +21,7 @@ class QuestionGenerationHistoryBuilder(BaseHistoryBuilder):
         return []
 
 
-class BatchSummaryUpdateHistoryBuilder(BaseHistoryBuilder):
+class QuestionControlSummaryUpdateHistoryBuilder(BaseHistoryBuilder):
     def build_system_context(self, session):
         if not session.summary:
             return []
@@ -43,7 +43,7 @@ class BatchSummaryUpdateHistoryBuilder(BaseHistoryBuilder):
         ]
 
 
-class PerQuestionSummaryUpdateHistoryBuilder(BaseHistoryBuilder):
+class LearningStateSummaryUpdateHistoryBuilder(BaseHistoryBuilder):
     def build_system_context(self, session):
         if not session.summary:
             return []

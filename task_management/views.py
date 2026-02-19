@@ -8,10 +8,14 @@ from django.views import View, generic
 
 from accounts.models import CustomUser
 
-from .forms import (InterestCategoryAddForm, LearningGoalSetForm,
-                    NativeLanguageSetForm)
-from .models import (DraftLearningGoal, LearningGoal, LearningMainTopic,
-                     LearningSubTopic, UserInterestCategory)
+from .forms import InterestCategoryAddForm, LearningGoalSetForm, NativeLanguageSetForm
+from .models import (
+    DraftLearningGoal,
+    LearningGoal,
+    LearningMainTopic,
+    LearningSubTopic,
+    UserInterestCategory,
+)
 
 
 # Create your views here.

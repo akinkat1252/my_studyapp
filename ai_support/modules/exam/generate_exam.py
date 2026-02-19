@@ -1,0 +1,387 @@
+import json
+
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
+from ai_support.ai_chain import (
+    get_chat_model_for_question_generation,
+    get_chat_model_for_report,
+    get_chat_model_for_scoring,
+    get_chat_model_for_summary,
+)
+from ai_support.modules.common.services import (
+    get_common_safety_rules,
+    language_constraint,
+)
+from exam.models import ExamSession
+
+from .exam_history import (
+    EvaluationHistoryBuilder,
+    LearningStateSummaryUpdateHistoryBuilder,
+    QuestionControlSummaryUpdateHistoryBuilder,
+    QuestionGenerationHistoryBuilder,
+    ReportHistoryBuilder,
+)
+
+
+# ========== Text Constants ==========
+GLOBAL_PERSONAL = (
+    "You are a standardized academic assessment AI.\n"
+    "You assist users in their learning with strict objectivity and structural accuracy.\n"
+)
+
+# MCQ Generation Instructions
+MCQ_STRICT_RULES = (
+    "STRICT RULES FOR MCQ GENERATION:\n"
+    "- Generate a multiple choice question (MCQ) relevant to the current exam topic.\n"
+    "- The question must have one correct answer and three plausible distractors.\n"
+    "- Do not include any explanations or justifications in the question."
+)
+
+MCQ_OUTPUT_FORMAT_INSTRUCTION = (
+    "OUTPUT FORMAT RULES:\n"
+    "Output must be a JSON object with the following structure:\n"
+    "{\n"
+    '  "question": "...",\n'
+    '  "choices": {\n'
+    '    "A": "...",\n'
+    '    "B": "...",\n'
+    '    "C": "...",\n'
+    '    "D": "..." \n'
+    '  },\n'
+    '  "answer": "A",\n'
+    '  "explanation": "..."\n'
+    "}"
+)
+
+# WT Generation Instructions
+WT_STRICT_RULES = (
+    "STRICT RULES FOR WRITTEN TASK GENERATION:\n"
+    "- The questions should be centered around the 'current exam topic'.\n"
+    "- The question should prompt for a detailed written response.\n"
+    "- Do not include any specific formatting instructions for the answer."
+)
+
+def get_evaluation_strict_rules(exam_type: str, max_score: int = 20) -> str:
+    if exam_type == "rubric":
+        max_score = 20
+    elif exam_type == "rubric_heavy":
+        max_score = 100
+
+    return (
+        "EVALUATION STRICT RULES:\n"
+        "- For example, if the exam is programming, it will be scored on multiple items such as accuracy and readability.\n"
+        f"- It will be scored out of {max_score} points.\n"
+        "- The number of items and the points assigned to each are up to you.\n"
+        "- Provide a brief explanation justifying the score, highlighting key points from the student's answer that influenced the evaluation.\n\n"
+    )
+
+EVALUATION_OUTPUT_FORMAT_INSTRUCTION = (
+    "OUTPUT FORMAT RULES:\n"
+    "Output must be a JSON object with the following structure:\n"
+    "{\n"
+    '  "total_score": 5.0,\n'
+    '  "feedback": "...",\n'
+    '  "detail_scores": {\n'
+    '    "items": [\n'
+    '      {\n'
+    '               "key": "accuracy",\n'
+    '               "score": 2.0,\n'
+    '               "max_score": 3.0,\n'
+    '               "evaluation": "..."\n'
+    '      },\n'
+    '      {\n'
+    '               "key": "logic",\n'
+    '               "score": 3.0,\n'
+    '               "max_score": 3.0,\n'
+    '               "evaluation": "..."\n'
+    '      }\n'
+    '    ]\n'
+    "}"
+)
+
+# Summary Generation Instructions
+SUMMARY_STRICT_RULES = (
+    "STRICT RULES FOR SUMMARY GENERATION:\n"
+    "- Generate a concise summary of the exam session so far, focusing on the questions generated and the flow of the exam.\n"
+)
+
+
+# ========== Generate Question ==========
+# Exam Type: MCQ (Multiple Choice Question)
+def generate_mcq_for_sub_topic(session: ExamSession) -> AIMessage:
+    llm = get_chat_model_for_question_generation()
+    history_builder = QuestionGenerationHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You need to generate a multiple choice quiz on the current exam topic.\n\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            "EXAM CONTEXT:\n"
+            f"Learning Goal: {session.sub_topic.main_topic.learning_goal.title}\n"
+            f"Main Topic: {session.sub_topic.main_topic.title}\n"
+            f"Current Exam Topic: {session.sub_topic.title}\n\n"
+
+            f"{MCQ_STRICT_RULES}\n\n"
+
+            f"{MCQ_OUTPUT_FORMAT_INSTRUCTION}"
+        )),
+        *history_messages,
+        HumanMessage(content=(
+            "Based on the above context and rules, generate the MCQ in the specified JSON format."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response
+
+def generate_mcq_for_main_topic(session: ExamSession) -> AIMessage:
+    all_sub_topics = session.main_topic.sub_topics.order_by("id")
+    sub_topic_titles = [
+         f"{i + 1}. {sub_topic.title}"
+         for i, sub_topic in enumerate(all_sub_topics)
+    ]
+
+    llm = get_chat_model_for_question_generation()
+    history_builder = QuestionGenerationHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You need to generate a multiple choice quiz on the current exam topic.\n\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            "EXAM CONTEXT:\n"
+            f"Learning Goal: {session.main_topic.learning_goal.title}\n"
+            f"Current Exam Topic: {session.main_topic.title}\n"
+            f"All Sub-Topics:\n"
+            + "\n".join(sub_topic_titles) + "\n\n"
+
+            f"{MCQ_STRICT_RULES}\n\n"
+
+            f"{MCQ_OUTPUT_FORMAT_INSTRUCTION}"
+        )),
+        *history_messages,
+        HumanMessage(content=(
+            "Based on the above context and rules, generate the MCQ in the specified JSON format."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response
+
+# Exam Type: WT (Written Task)
+def generate_wt_for_sub_topic(session: ExamSession) -> AIMessage:
+    llm = get_chat_model_for_question_generation()
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You need to generate a written task question on the current exam topic.\n\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            "EXAM CONTEXT:\n"
+            f"Learning Goal: {session.sub_topic.main_topic.learning_goal.title}\n"
+            f"Main Topic: {session.sub_topic.main_topic.title}\n"
+            f"Current Exam Topic: {session.sub_topic.title}\n\n"
+
+            f"{WT_STRICT_RULES}"
+        )),
+        HumanMessage(content=(
+            "Based on the above context and rules, generate the written task question."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response
+
+def generate_wt_for_main_topic(session: ExamSession) -> AIMessage:
+    all_sub_topics = session.main_topic.sub_topics.order_by("id")
+    sub_topic_titles = [
+         f"{i + 1}. {sub_topic.title}"
+         for i, sub_topic in enumerate(all_sub_topics)
+    ]
+    llm = get_chat_model_for_question_generation()
+    history_builder = QuestionGenerationHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You need to generate a written task question on the current exam topic.\n\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            "EXAM CONTEXT:\n"
+            f"Learning Goal: {session.main_topic.learning_goal.title}\n"
+            f"Current Exam Topic: {session.main_topic.title}\n\n"
+            f"All Sub-Topics:\n"
+            + "\n".join(sub_topic_titles) + "\n\n"
+
+            f"{WT_STRICT_RULES}"
+        )),
+        *history_messages,
+        HumanMessage(content=(
+            "Based on the above context and rules, generate the written task question."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response
+
+# Exam Type: CT (Comprehensive Test)
+def generate_ct_for_learning_goal(session: ExamSession) -> AIMessage:
+    all_main_topics = session.learning_goal.main_topics.order_by("id")
+    main_topic_titles = [
+         f"{i + 1}. {main_topic.title}"
+         for i, main_topic in enumerate(all_main_topics)
+    ]
+    llm = get_chat_model_for_question_generation()
+    history_builder = QuestionGenerationHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You need to generate a comprehensive test question on the current learning goal.\n\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            "EXAM CONTEXT:\n"
+            f"Learning Goal: {session.learning_goal.title}\n"
+            f"All Main Topics:\n"
+            + "\n".join(main_topic_titles) + "\n\n"
+
+            "CT STRICT RULES:\n"
+            "- The question should be comprehensive and cover multiple main topics under the learning goal.\n"
+            "- The question should prompt for a detailed written response.\n"
+            "- Do not include any specific formatting instructions for the answer."
+        )),
+        HumanMessage(content=(
+            "Based on the above context and rules, generate the comprehensive test question."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response
+
+
+#========== Generate Evaluation ==========
+# Scoring Method: rubric
+def generate_rubric_evaluation(session: ExamSession) -> AIMessage:
+    llm = get_chat_model_for_scoring()
+    history_builder = EvaluationHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You are an objective and strict exam evaluator.\n"
+            "Evaluate the student's answer based on the question and provide a rubric-based score along with a brief explanation.\n\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            f"{get_evaluation_strict_rules(exam_type='rubric')}\n\n"
+
+            f"{EVALUATION_OUTPUT_FORMAT_INSTRUCTION}"
+        )),
+        *history_messages,
+        HumanMessage(content=(
+            "Based on the above context and rules, evaluate the student's answer and provide the score and explanation in the specified JSON format."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response
+
+# Scoring Method: rubric heavy
+def generate_heavy_rubric_evaluation(session: ExamSession) -> AIMessage:
+    llm = get_chat_model_for_scoring()
+    history_builder = EvaluationHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You are an objective and strict exam evaluator.\n"
+            "Evaluate the student's answer based on the question and provide a binary score (pass/fail) along with a brief explanation.\n\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            f"{get_evaluation_strict_rules(exam_type='rubric_heavy')}\n\n"
+
+            f"{EVALUATION_OUTPUT_FORMAT_INSTRUCTION}"
+        )),
+        *history_messages,
+        HumanMessage(content=(
+            "Based on the above context and rules, evaluate the student's answer and provide the score and explanation in the specified JSON format."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response
+
+
+# ========== Generate Summary ==========
+# Usage: Flow type<batch>
+def generate_question_control_summary(session: ExamSession) -> AIMessage:
+    llm = get_chat_model_for_summary()
+    history_builder = QuestionControlSummaryUpdateHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You are an objective and strict exam summary generator.\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            f"{SUMMARY_STRICT_RULES}"
+        )),
+        *history_messages,
+        HumanMessage(content=(
+            "Based on the above context and rules, generate the question control summary."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response
+
+# Usage: Flow type<per question>, Report generation
+def generate_learning_state_summary(session: ExamSession) -> AIMessage:
+    llm = get_chat_model_for_summary()
+    history_builder = LearningStateSummaryUpdateHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You are an objective and strict exam summary generator.\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            f"{SUMMARY_STRICT_RULES}"
+        )),
+        *history_messages,
+        HumanMessage(content=(
+            "Based on the above context and rules, generate the learning state summary."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response
+
+
+# ========== Generate Report ==========
+def generate_exam_report_for_report(session: ExamSession) -> AIMessage:
+    llm = get_chat_model_for_report()
+    history_builder = ReportHistoryBuilder()
+    history_messages = history_builder.build_messages(session=session)
+    messages = [
+        SystemMessage(content=(
+            f"{GLOBAL_PERSONAL}\n"
+            "You are an objective and strict exam report generator.\n"
+            "Generate a comprehensive report summarizing the student's performance in the exam session, including strengths, weaknesses, and actionable recommendations for improvement.\n\n"
+
+            f"{language_constraint(user=session.user)}\n\n"
+
+            "REPORT GENERATION STRICT RULES:\n"
+            "- Provide a detailed analysis of the student's performance based on the questions and evaluations throughout the exam session.\n"
+            "- Highlight specific strengths and weaknesses observed in the student's answers.\n"
+            "- Offer actionable recommendations for improvement, tailored to the student's performance and learning goals."
+        )),
+        *history_messages,
+        HumanMessage(content=(
+            "Based on the above context and rules, generate the comprehensive exam report."
+        ))
+    ]
+    response = llm.invoke(messages)
+    return response

@@ -3,25 +3,25 @@ import json
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from ai_support.ai_chain import (
-    get_chat_model_for_outline,
     get_chat_model_for_lecture,
-    get_chat_model_for_summary,
+    get_chat_model_for_outline,
     get_chat_model_for_report,
-    )
-from ai_support.modules.common.services import language_constraint, get_common_safety_rules
-from lecture.models import (LectureLog, LectureProgress, LectureSession,
-                            LectureTopic,
-                            )
-
+    get_chat_model_for_summary,
+)
+from ai_support.modules.common.services import (
+    get_common_safety_rules,
+    language_constraint,
+)
+from lecture.models import LectureLog, LectureProgress, LectureSession, LectureTopic
 from task_management.models import LearningSubTopic
 
-from .lecture_history import (LectureGenerationHistorybuilder,
-                              LectureHistoryBuilder,
-                              LectureReportHistoryBuilder,
-                              LectureReportUpdateHistoryBuilder,
-                              SummaryHistoryBuilder,
-                              )
-
+from .lecture_history import (
+    LectureGenerationHistorybuilder,
+    LectureHistoryBuilder,
+    LectureReportHistoryBuilder,
+    LectureReportUpdateHistoryBuilder,
+    SummaryHistoryBuilder,
+)
 
 GLOBAL_PERSONAL = (
     "You are an educational AI that provides structured, clear instruction.\n"
@@ -32,8 +32,7 @@ GLOBAL_PERSONAL = (
 def generate_lecture_outline(sub_topic: LearningSubTopic) -> AIMessage:
     llm = get_chat_model_for_outline()
 
-    main_topic = sub_topic.main_topic
-    all_sub_topics = main_topic.sub_topics.order_by("id")
+    all_sub_topics = sub_topic.main_topic.sub_topics.order_by("id")
     sub_topic_titles = [
         f"{i + 1}. {sub_topic.title}"
         for i, sub_topic in enumerate(all_sub_topics)
@@ -47,8 +46,8 @@ def generate_lecture_outline(sub_topic: LearningSubTopic) -> AIMessage:
             f"{language_constraint(language=sub_topic.main_topic.user)}\n\n"
 
             "LECTURE STRUCTURE CONTEXT:\n"
-            f"Learning Goal: {sub_topic.learning_goal.title}\n"
-            f"Main Topic: {main_topic.title}\n\n"
+            f"Learning Goal: {sub_topic.main_topic.learning_goal.title}\n"
+            f"Main Topic: {sub_topic.main_topic.title}\n\n"
 
             f"All sub-topics under this main topic:\n"
             + "\n".join(sub_topic_titles) + "\n\n"

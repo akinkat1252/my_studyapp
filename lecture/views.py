@@ -10,16 +10,25 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.views import View, generic
 
-from ai_support.modules.lecture.generate_lecture import \
-    generate_lecture_outline
+from ai_support.modules.lecture.generate_lecture import generate_lecture_outline
 from task_management.models import LearningMainTopic, LearningSubTopic
 
-from .models import LectureLog, LectureProgress, LectureSession, LectureTopic, LectureSessionSlice
-from .services import (advance_lecture, create_lecture_report,
-                       create_new_lecture_session, finalize_lecture,
-                       get_current_lecture_progress, handle_lecture_chat,
-                       update_lecture_report,
-                       )
+from .models import (
+    LectureLog,
+    LectureProgress,
+    LectureSession,
+    LectureSessionSlice,
+    LectureTopic,
+)
+from .services import (
+    advance_lecture,
+    create_lecture_report,
+    create_new_lecture_session,
+    finalize_lecture,
+    get_current_lecture_progress,
+    handle_lecture_chat,
+    update_lecture_report,
+)
 
 
 # Create your views here.

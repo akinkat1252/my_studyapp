@@ -1,7 +1,7 @@
 from typing import Optional
 
 from accounts.models import CustomUser, Language
-from accounts.services import get_user_language, get_default_language
+from accounts.services import get_default_language, get_user_language
 
 
 def language_constraint(user: CustomUser) -> str:
