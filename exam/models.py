@@ -1,8 +1,9 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
+
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
-from django.db.models import Q, Max, Sum
+from django.db.models import Max, Q, Sum
 
 from config import settings_common
 
@@ -252,6 +253,10 @@ class ExamQuestion(models.Model):
     )
     token_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+    # For MCQ type questions
+    choices = models.JSONField(null=True, blank=True)
+    correct_answer = models.CharField(max_length=5, null=True, blank=True)
+    explanation = models.TextField(blank=True)
 
     class Meta:
         verbose_name = 'Exam Question'
@@ -268,6 +273,36 @@ class ExamQuestion(models.Model):
             models.Index(fields=["session", "question_number"]),
             models.Index(fields=["status"]),
         ]
+
+    def clean(self):
+        super().clean()
+
+        scoring_method = self.session.exam_type.scoring_method
+
+        if scoring_method == "binary":
+            if not self.correct_answer:
+                raise ValidationError({
+                    "correct_answer": "Correct answer must be set for binary scoring."
+                })
+            if not self.choices:
+                raise ValidationError({
+                    "choices": "Choices must be set for binary scoring."
+                })
+            if not isinstance(self.choices, dict):
+                raise ValidationError({"choices": "Choices must be a dictionary."})
+            if self.correct_answer not in self.choices:
+                raise ValidationError({
+                    "correct_answer": "Correct answer must be one of the choices."
+                })
+            if not self.explanation:
+                raise ValidationError({
+                    "explanation": "Explanation must be provided for binary scoring."
+                })
+        else:
+            if self.correct_answer or self.choices:
+                raise ValidationError({
+                    "choices and correct_answer must be empty for non-binary scoring."
+                })
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None
@@ -324,12 +359,13 @@ class ExamEvaluation(models.Model):
     )
 
     score = models.DecimalField(
+
         max_digits=6,
         decimal_places=3,
         validators=[MinValueValidator(Decimal("0"))],
     )
     detail_scores = models.JSONField(null=True, blank=True)
-    feedback = models.TextField()
+    feedback = models.TextField(blank=True)
     token_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 

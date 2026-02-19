@@ -1,7 +1,8 @@
 from django.shortcuts import get_object_or_404, redirect, render
 
-from ai_support.modules.task_management.generate_learning_topic import \
-    generate_learning_topic
+from ai_support.modules.task_management.generate_learning_topic import (
+    generate_learning_topic,
+)
 from task_management.models import DraftLearningGoal
 
 

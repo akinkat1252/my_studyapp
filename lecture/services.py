@@ -1,11 +1,15 @@
 from datetime import timedelta
+
 from django.db import transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
 
 from ai_support.modules.lecture.generate_lecture import (
-    generate_lecture, generate_lecture_answer, generate_lecture_report,
-    generate_lecture_summary, generate_update_report,
+    generate_lecture,
+    generate_lecture_answer,
+    generate_lecture_report,
+    generate_lecture_summary,
+    generate_update_report,
 )
 
 from .models import LectureLog, LectureProgress, LectureSession

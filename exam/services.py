@@ -1,6 +1,6 @@
 from errno import DomainError
 
-from exam.models import ExamSession, ExamResult
+from exam.models import ExamResult, ExamSession
 
 
 def get_result(session: ExamSession) -> ExamResult:
