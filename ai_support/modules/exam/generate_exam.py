@@ -93,9 +93,8 @@ WT_STRICT_RULES = (
 def get_rubric_rules(session: ExamSession) -> str:
     rubric_schema = session.learning_goal.rubbic_schema
     return (
-        "Scoring must be done on the following items:\n"
-        "RUBRIC SCHEMA:\n"
-        f"{rubric_schema}"
+        "The evaluation must strictly follow the rubric below:\n"
+        f"{rubric_schema}\n"
         "- Do not invent new items.\n"
         "- Do not change the maximum scores."
     )
@@ -125,16 +124,16 @@ EVALUATION_OUTPUT_FORMAT_INSTRUCTION = (
     '  "detail_scores": {\n'
     '    "items": [\n'
     '      {\n'
-    '               "key": "accuracy",\n'
-    '               "score": 2.0,\n'
-    '               "max_score": 3.0,\n'
-    '               "evaluation": "..."\n'
+    '        "key": "accuracy",\n'
+    '        "score": 2.0,\n'
+    '        "max_score": 3.0,\n'
+    '        "evaluation": "..."\n'
     '      },\n'
     '      {\n'
-    '               "key": "logic",\n'
-    '               "score": 3.0,\n'
-    '               "max_score": 3.0,\n'
-    '               "evaluation": "..."\n'
+    '        "key": "logic",\n'
+    '        "score": 3.0,\n'
+    '        "max_score": 3.0,\n'
+    '        "evaluation": "..."\n'
     '      }\n'
     '    ]\n'
     "}"
