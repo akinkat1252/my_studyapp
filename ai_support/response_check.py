@@ -3,6 +3,9 @@ import json
 from ai_support.modules.task_management.generate_learning_topic import (
     generate_learning_topic,
 )
+from ai_support.modules.task_management.generate_rubric_schema import (
+    generate_rubric_schema
+)
 
 
 def test():
