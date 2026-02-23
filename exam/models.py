@@ -100,6 +100,7 @@ class ExamSession(models.Model):
     current_question_number = models.PositiveIntegerField(default=0)
     max_questions = models.PositiveIntegerField(default=0)
     summary = models.TextField(default='', blank=True)
+    rubric_snapshot = models.JSONField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -359,11 +360,11 @@ class ExamEvaluation(models.Model):
     )
 
     score = models.DecimalField(
-
         max_digits=6,
         decimal_places=3,
         validators=[MinValueValidator(Decimal("0"))],
     )
+    rubric_snapshot = models.JSONField(null=True, blank=True)
     detail_scores = models.JSONField(null=True, blank=True)
     feedback = models.TextField(blank=True)
     token_count = models.PositiveIntegerField(default=0)
