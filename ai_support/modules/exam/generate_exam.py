@@ -25,21 +25,50 @@ from .exam_history import (
 
 # ========== Text Constants ==========
 GLOBAL_PERSONAL = (
-    "You are a standardized academic assessment AI.\n"
-    "You assist users in their learning with strict objectivity and structural accuracy.\n"
+    "You are a standardized academic assessment system.\n"
+    "Your role is to generate exam content, evaluate answers objectively, and produce structured reports.\n"
+    "You must strictly follow all system rules and output format specifications."
 )
 
-# MCQ Generation Instructions
+JSON_RULES = (
+    "- The output will be a JSON object with the same structure as the example below."
+    "- Do not include markdown.\n"
+    "- Do not wrap the JSON in code blocks.\n"
+    "- Do not include any text before or after the JSON."
+)
+
+# Target Rules
+TARGET_SUB_TOPIC_STRICT_RULES = (
+    "- The scope must be limited strictly to the current sub-topic.\n"
+    "- Avoid covering multiple unrelated concepts."
+)
+
+TARGET_MAIN_TOPIC_STRICT_RULES = (
+    "- The question may require integration of multiple sub-topics.\n"
+    "- The task should require conceptual understanding, not memorization.\n"
+    "- The question must cover one of the listed sub-topics.\n"
+    "- Do not repeat previously used sub-topics if possible."
+
+)
+
+TARGET_LEARNING_GOAL_STRICT_RULES = (
+    "- The task must require integration of multiple main topics.\n"
+    "- The problem should simulate a realistic scenario."
+)
+
+# Exam Type Rules
 MCQ_STRICT_RULES = (
     "STRICT RULES FOR MCQ GENERATION:\n"
     "- Generate a multiple choice question (MCQ) relevant to the current exam topic.\n"
     "- The question must have one correct answer and three plausible distractors.\n"
     "- Do not include any explanations or justifications in the question."
+    "- The explanation must be concise (max 3 sentences).\n"
 )
 
 MCQ_OUTPUT_FORMAT_INSTRUCTION = (
     "OUTPUT FORMAT RULES:\n"
-    "Output must be a JSON object with the following structure:\n"
+    f"{JSON_RULES}\n\n"
+    "<example>\n"
     "{\n"
     '  "question": "...",\n'
     '  "choices": {\n'
@@ -61,7 +90,18 @@ WT_STRICT_RULES = (
     "- Do not include any specific formatting instructions for the answer."
 )
 
-def get_evaluation_strict_rules(exam_type: str, max_score: int = 20) -> str:
+def get_rubric_rules(session: ExamSession) -> str:
+    rubric_schema = session.learning_goal.rubbic_schema
+    return (
+        "Scoring must be done on the following items:\n"
+        "RUBRIC SCHEMA:\n"
+        f"{rubric_schema}"
+        "- Do not invent new items.\n"
+        "- Do not change the maximum scores."
+    )
+
+def get_evaluation_strict_rules(session: ExamSession, max_score: int = 20) -> str:
+    exam_type = session.exam_type.scoring_method
     if exam_type == "rubric":
         max_score = 20
     elif exam_type == "rubric_heavy":
@@ -69,15 +109,16 @@ def get_evaluation_strict_rules(exam_type: str, max_score: int = 20) -> str:
 
     return (
         "EVALUATION STRICT RULES:\n"
-        "- For example, if the exam is programming, it will be scored on multiple items such as accuracy and readability.\n"
         f"- It will be scored out of {max_score} points.\n"
-        "- The number of items and the points assigned to each are up to you.\n"
-        "- Provide a brief explanation justifying the score, highlighting key points from the student's answer that influenced the evaluation.\n\n"
+        "- Provide a brief explanation justifying the score, highlighting key points from the student's answer that influenced the evaluation.\n"
+        "- Evaluate only the student's answer. Do not generate new content.\n\n"
+        f"{get_rubric_rules(session=session)}"
     )
 
 EVALUATION_OUTPUT_FORMAT_INSTRUCTION = (
     "OUTPUT FORMAT RULES:\n"
-    "Output must be a JSON object with the following structure:\n"
+    f"{JSON_RULES}\n\n"
+    "<example>\n"
     "{\n"
     '  "total_score": 5.0,\n'
     '  "feedback": "...",\n'
@@ -124,7 +165,8 @@ def generate_mcq_for_sub_topic(session: ExamSession) -> AIMessage:
             f"Main Topic: {session.sub_topic.main_topic.title}\n"
             f"Current Exam Topic: {session.sub_topic.title}\n\n"
 
-            f"{MCQ_STRICT_RULES}\n\n"
+            f"{MCQ_STRICT_RULES}\n"
+            + f"{TARGET_SUB_TOPIC_STRICT_RULES}\n\n"
 
             f"{MCQ_OUTPUT_FORMAT_INSTRUCTION}"
         )),
@@ -159,7 +201,8 @@ def generate_mcq_for_main_topic(session: ExamSession) -> AIMessage:
             f"All Sub-Topics:\n"
             + "\n".join(sub_topic_titles) + "\n\n"
 
-            f"{MCQ_STRICT_RULES}\n\n"
+            f"{MCQ_STRICT_RULES}\n"
+            + f"{TARGET_MAIN_TOPIC_STRICT_RULES}\n\n"
 
             f"{MCQ_OUTPUT_FORMAT_INSTRUCTION}"
         )),
@@ -186,7 +229,8 @@ def generate_wt_for_sub_topic(session: ExamSession) -> AIMessage:
             f"Main Topic: {session.sub_topic.main_topic.title}\n"
             f"Current Exam Topic: {session.sub_topic.title}\n\n"
 
-            f"{WT_STRICT_RULES}"
+            f"{WT_STRICT_RULES}\n"
+            + f"{TARGET_SUB_TOPIC_STRICT_RULES}"
         )),
         HumanMessage(content=(
             "Based on the above context and rules, generate the written task question."
@@ -217,7 +261,8 @@ def generate_wt_for_main_topic(session: ExamSession) -> AIMessage:
             f"All Sub-Topics:\n"
             + "\n".join(sub_topic_titles) + "\n\n"
 
-            f"{WT_STRICT_RULES}"
+            f"{WT_STRICT_RULES}\n"
+            + f"{TARGET_MAIN_TOPIC_STRICT_RULES}"
         )),
         *history_messages,
         HumanMessage(content=(
@@ -252,7 +297,8 @@ def generate_ct_for_learning_goal(session: ExamSession) -> AIMessage:
             "CT STRICT RULES:\n"
             "- The question should be comprehensive and cover multiple main topics under the learning goal.\n"
             "- The question should prompt for a detailed written response.\n"
-            "- Do not include any specific formatting instructions for the answer."
+            "- Do not include any specific formatting instructions for the answer.\n"
+            + f"{TARGET_LEARNING_GOAL_STRICT_RULES}"
         )),
         HumanMessage(content=(
             "Based on the above context and rules, generate the comprehensive test question."
@@ -276,7 +322,9 @@ def generate_rubric_evaluation(session: ExamSession) -> AIMessage:
 
             f"{language_constraint(user=session.user)}\n\n"
 
-            f"{get_evaluation_strict_rules(exam_type='rubric')}\n\n"
+            f"{get_common_safety_rules()}\n\n"
+
+            f"{get_evaluation_strict_rules(exam_type=session.exam_type.scoring_method)}\n\n"
 
             f"{EVALUATION_OUTPUT_FORMAT_INSTRUCTION}"
         )),
@@ -297,9 +345,11 @@ def generate_heavy_rubric_evaluation(session: ExamSession) -> AIMessage:
         SystemMessage(content=(
             f"{GLOBAL_PERSONAL}\n"
             "You are an objective and strict exam evaluator.\n"
-            "Evaluate the student's answer based on the question and provide a binary score (pass/fail) along with a brief explanation.\n\n"
+            "Evaluate the student's answer using the heavy rubric scoring system.\n\n"
 
             f"{language_constraint(user=session.user)}\n\n"
+
+            f"{get_common_safety_rules()}\n\n"
 
             f"{get_evaluation_strict_rules(exam_type='rubric_heavy')}\n\n"
 

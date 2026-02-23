@@ -79,7 +79,8 @@ class EvaluationHistoryBuilder(BaseHistoryBuilder):
         latest_question = session.questions.latest()
 
         return [
-            AIMessage(content=latest_question.question)
+            AIMessage(content=latest_question.question),
+            HumanMessage(content=latest_question.answer.answer),
         ]
 
 

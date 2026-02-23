@@ -19,7 +19,7 @@ def learning_topic_generate_view(request, draft_id):
         current_level=draft.current_level,
         target_level=draft.target_level,
         description=draft.description,
-        language=request.user.user_language,
+        user=request.user,
     )
 
     draft.raw_generated_data = parsed_json

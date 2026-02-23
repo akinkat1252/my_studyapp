@@ -117,6 +117,7 @@ class LearningGoal(models.Model):
     title = models.CharField(max_length=200)
     current_level = models.TextField(blank=True)
     target_level = models.TextField(blank=True)
+    rubric_schema = models.JSONField()
     description = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -162,6 +163,7 @@ class LearningMainTopic(models.Model):
         related_name='main_topics'
     )
     title = models.CharField(max_length=200)
+    rubric_schema = models.JSONField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -198,6 +200,7 @@ class LearningSubTopic(models.Model):
         related_name='sub_topics'
     )
     title = models.CharField(max_length=200)
+    rubric_schema = models.JSONField(null=True, blank=True)
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
