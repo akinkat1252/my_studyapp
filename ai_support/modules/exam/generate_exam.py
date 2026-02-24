@@ -8,13 +8,12 @@ from ai_support.ai_chain import (
     get_chat_model_for_scoring,
     get_chat_model_for_summary,
 )
-from ai_support.modules.common.services import (
-    get_common_safety_rules,
-    language_constraint,
-)
+from ai_support.modules.constraints.language_common import language_constraint_common
+from ai_support.modules.constraints.common_system_messages import get_common_safety_rules
+
 from exam.models import ExamSession
 
-from .exam_history import (
+from ai_support.modules.exam.exam_history import (
     EvaluationHistoryBuilder,
     LearningStateSummaryUpdateHistoryBuilder,
     QuestionControlSummaryUpdateHistoryBuilder,
@@ -31,10 +30,15 @@ GLOBAL_PERSONAL = (
 )
 
 JSON_RULES = (
-    "- The output will be a JSON object with the same structure as the example below."
+    "JSON RULES:\n"
+    "- The output will be a JSON object with the same structure as the example below.\n"
+    "- The JSON structure must not be modified.\n"
     "- Do not include markdown.\n"
     "- Do not wrap the JSON in code blocks.\n"
-    "- Do not include any text before or after the JSON."
+    "- Do not include any text before or after the JSON.\n"
+    "- Do not add or remove keys.\n"
+    "- Do not change nesting levels."
+    
 )
 
 # Target Rules
@@ -157,7 +161,7 @@ def generate_mcq_for_sub_topic(session: ExamSession) -> AIMessage:
             f"{GLOBAL_PERSONAL}\n"
             "You need to generate a multiple choice quiz on the current exam topic.\n\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             "EXAM CONTEXT:\n"
             f"Learning Goal: {session.sub_topic.main_topic.learning_goal.title}\n"
@@ -192,7 +196,7 @@ def generate_mcq_for_main_topic(session: ExamSession) -> AIMessage:
             f"{GLOBAL_PERSONAL}\n"
             "You need to generate a multiple choice quiz on the current exam topic.\n\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             "EXAM CONTEXT:\n"
             f"Learning Goal: {session.main_topic.learning_goal.title}\n"
@@ -221,7 +225,7 @@ def generate_wt_for_sub_topic(session: ExamSession) -> AIMessage:
             f"{GLOBAL_PERSONAL}\n"
             "You need to generate a written task question on the current exam topic.\n\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             "EXAM CONTEXT:\n"
             f"Learning Goal: {session.sub_topic.main_topic.learning_goal.title}\n"
@@ -252,7 +256,7 @@ def generate_wt_for_main_topic(session: ExamSession) -> AIMessage:
             f"{GLOBAL_PERSONAL}\n"
             "You need to generate a written task question on the current exam topic.\n\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             "EXAM CONTEXT:\n"
             f"Learning Goal: {session.main_topic.learning_goal.title}\n"
@@ -286,7 +290,7 @@ def generate_ct_for_learning_goal(session: ExamSession) -> AIMessage:
             f"{GLOBAL_PERSONAL}\n"
             "You need to generate a comprehensive test question on the current learning goal.\n\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             "EXAM CONTEXT:\n"
             f"Learning Goal: {session.learning_goal.title}\n"
@@ -319,7 +323,7 @@ def generate_rubric_evaluation(session: ExamSession) -> AIMessage:
             "You are an objective and strict exam evaluator.\n"
             "Evaluate the student's answer based on the question and provide a rubric-based score along with a brief explanation.\n\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             f"{get_common_safety_rules()}\n\n"
 
@@ -346,7 +350,7 @@ def generate_heavy_rubric_evaluation(session: ExamSession) -> AIMessage:
             "You are an objective and strict exam evaluator.\n"
             "Evaluate the student's answer using the heavy rubric scoring system.\n\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             f"{get_common_safety_rules()}\n\n"
 
@@ -374,7 +378,7 @@ def generate_question_control_summary(session: ExamSession) -> AIMessage:
             f"{GLOBAL_PERSONAL}\n"
             "You are an objective and strict exam summary generator.\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             f"{SUMMARY_STRICT_RULES}"
         )),
@@ -396,7 +400,7 @@ def generate_learning_state_summary(session: ExamSession) -> AIMessage:
             f"{GLOBAL_PERSONAL}\n"
             "You are an objective and strict exam summary generator.\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             f"{SUMMARY_STRICT_RULES}"
         )),
@@ -420,7 +424,7 @@ def generate_exam_report_for_report(session: ExamSession) -> AIMessage:
             "You are an objective and strict exam report generator.\n"
             "Generate a comprehensive report summarizing the student's performance in the exam session, including strengths, weaknesses, and actionable recommendations for improvement.\n\n"
 
-            f"{language_constraint(user=session.user)}\n\n"
+            f"{language_constraint_common(user=session.user)}\n\n"
 
             "REPORT GENERATION STRICT RULES:\n"
             "- Provide a detailed analysis of the student's performance based on the questions and evaluations throughout the exam session.\n"

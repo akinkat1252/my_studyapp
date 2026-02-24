@@ -8,14 +8,13 @@ from ai_support.ai_chain import (
     get_chat_model_for_report,
     get_chat_model_for_summary,
 )
-from ai_support.modules.common.services import (
-    get_common_safety_rules,
-    language_constraint,
-)
-from lecture.models import LectureLog, LectureProgress, LectureSession, LectureTopic
+from ai_support.modules.constraints.language_common import language_constraint_common
+from ai_support.modules.constraints.common_system_messages import get_common_safety_rules
+
+from lecture.models import LectureSession, LectureTopic
 from task_management.models import LearningSubTopic
 
-from .lecture_history import (
+from ai_support.modules.lecture.lecture_history import (
     LectureGenerationHistorybuilder,
     LectureHistoryBuilder,
     LectureReportHistoryBuilder,
@@ -43,7 +42,7 @@ def generate_lecture_outline(sub_topic: LearningSubTopic) -> AIMessage:
             f"{GLOBAL_PERSONAL}\n"
             "You are generating a lecture outline for ONE specific sub-topic.\n\n"
 
-            f"{language_constraint(language=sub_topic.main_topic.user)}\n\n"
+            f"{language_constraint_common(language=sub_topic.main_topic.user)}\n\n"
 
             "LECTURE STRUCTURE CONTEXT:\n"
             f"Learning Goal: {sub_topic.main_topic.learning_goal.title}\n"
@@ -91,7 +90,7 @@ def generate_lecture(session: LectureSession, topic: LectureTopic) -> AIMessage:
         SystemMessage(content=(
             f"{GLOBAL_PERSONAL}\n\n"
 
-            f"{language_constraint(language=session.user)}\n\n"
+            f"{language_constraint_common(language=session.user)}\n\n"
 
             "The output must follow the rules below.\n"
             "- There is no need to say hello or explain the next schedule.\n"
@@ -122,7 +121,7 @@ def generate_lecture_summary(session: LectureSession) -> AIMessage:
             "You are an educational AI that maintains a running summary of a lecture.\n"
             "Update the existing summary using the new conversation.\n"
             "Preserve important past information. Never lose earlier content.\n\n"
-            f"{language_constraint(language=session.user)}\n\n"
+            f"{language_constraint_common(language=session.user)}\n\n"
         )),
         *history_messages,
         HumanMessage(content="Please update the summary."),
@@ -142,7 +141,7 @@ def generate_lecture_answer(session: LectureSession, user_input: str) -> AIMessa
 
             f"{get_common_safety_rules()}\n\n"
 
-            f"{language_constraint(language=session.user)}\n\n"
+            f"{language_constraint_common(language=session.user)}\n\n"
 
             "Please respond based on the following rules.\n"
             "- Respond appropriately to the user's input while maintaining the context of the lecture.\n"
@@ -164,7 +163,7 @@ def generate_lecture_report(session: LectureSession) -> AIMessage:
         SystemMessage(content=(
             f"{GLOBAL_PERSONAL}\n\n"
 
-            f"{language_constraint(language=session.user)}\n\n"
+            f"{language_constraint_common(language=session.user)}\n\n"
 
             "The output must follow the rules below.\n"
             "- Summarize what the student learned, what was covered, what remains unclear, and suggest next steps.\n"
@@ -190,7 +189,7 @@ def generate_update_report(session: LectureSession) -> AIMessage:
         SystemMessage(content=(
             f"{GLOBAL_PERSONAL}\n\n"
 
-            f"{language_constraint(language=session.user)}\n\n"
+            f"{language_constraint_common(language=session.user)}\n\n"
 
             "The output must follow the rules below.\n"
             "- Update the existing report to reflect new content covered in the latest lecture segment.\n"

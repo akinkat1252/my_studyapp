@@ -3,7 +3,7 @@ import re
 
 from ai_support.ai_client import get_ai_client
 from exam.models import ExamSession
-from .validate import validate_rubric_schema
+from ai_support.modules.task_management.validate import validate_rubric_schema
 
 client = get_ai_client()
 
