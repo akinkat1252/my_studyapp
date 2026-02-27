@@ -1,5 +1,4 @@
 import json
-import re
 
 from accounts.models import CustomUser
 from ai_support.ai_client import get_ai_client

@@ -33,7 +33,6 @@ def create_new_lecture_session(user, sub_topic):
             LectureProgress(
                 session=session,
                 topic=topic,
-                order=topic.default_order,
             ) for topic in sub_topic.lecture_topics.all().order_by("default_order")
         ]
         LectureProgress.objects.bulk_create(progress_objs)
@@ -45,7 +44,7 @@ def get_current_lecture_progress(session):
     return (
         session.progress_records
         .filter(is_completed=False)
-        .order_by("order")
+        .order_by("id")
         .first()
     )
 

@@ -117,7 +117,7 @@ class LearningGoal(models.Model):
     title = models.CharField(max_length=200)
     current_level = models.TextField(blank=True)
     target_level = models.TextField(blank=True)
-    rubric_schema = models.JSONField()
+    rubric_schema = models.JSONField(null=True, blank=True)
     description = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)

@@ -13,14 +13,14 @@ from django.views import View, generic
 from ai_support.modules.lecture.generate_lecture import generate_lecture_outline
 from task_management.models import LearningMainTopic, LearningSubTopic
 
-from .models import (
+from lecture.models import (
     LectureLog,
     LectureProgress,
     LectureSession,
     LectureSessionSlice,
     LectureTopic,
 )
-from .services import (
+from lecture.services import (
     advance_lecture,
     create_lecture_report,
     create_new_lecture_session,
@@ -38,8 +38,8 @@ class LectureStartView(LoginRequiredMixin, View):
     def get(self, request, sub_topic_id):
         sub_topic = get_object_or_404(
             LearningSubTopic,
-            user=self.request.user,
             id=sub_topic_id,
+            main_topic__user=request.user
         )
 
         # Ensure lecture topics exist for the sub-topic
@@ -177,7 +177,7 @@ class LectureReportView(LoginRequiredMixin, View):
             LectureProgress.objects
             .select_related("topic")
             .filter(session=session)
-            .order_by("order")
+            .order_by("id")
         )
 
         _display_time = 60
@@ -233,4 +233,4 @@ class LectureFinishView(LoginRequiredMixin, View):
         session.can_continue = can_continue
         session.save()
 
-        return redirect("task_management:learning_goal_detail", goal_id=session.sub_topic.learning_goal.id)
+        return redirect("task_management:learning_goal_detail", goal_id=session.sub_topic.main_topic.learning_goal.id)
