@@ -221,8 +221,6 @@ class LearningGoalFinalizeView(LoginRequiredMixin, View):
                     continue
 
                 LearningSubTopic.objects.create(
-                    user=request.user,
-                    learning_goal=learning_goal,
                     main_topic=main_topic,
                     title=sub_title,
                 )
