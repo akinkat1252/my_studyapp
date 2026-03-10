@@ -37,14 +37,14 @@
         <div class="d-flex align-items-center gap-4">
             <h2> &lt; Learning Topics &gt;</h2>
             <a href="#" class="btn btn-sm btn-primary">Lecture</a>
-            <a href="#" class="btn btn-sm btn-info">CT</a>
+            <a href="{% url 'exam:start_per_question_exam' exam_type='ct_goal' topic_id=learning_goal.id %}" class="btn btn-sm btn-info">CT</a>
         </div>
         {% for main in main_topics %}
             <hr>
             <div class="d-flex align-items-center gap-4">
                 <h3>・{{ main.title }}</h3>
-                <a href="{% url 'exam:mcq_for_main_topic' main.id %}" class="btn btn-sm btn-success">MCQ</a>
-                <a href="#" class="btn btn-sm btn-warning">WT</a>
+                <a href="{% url 'exam:start_batch_exam' exam_type='mcq_main' topic_id=main.id %}" class="btn btn-sm btn-success">MCQ</a>
+                <a href="{% url 'exam:start_per_question_exam' exam_type='wt_main' topic_id=main.id %}" class="btn btn-sm btn-warning">WT</a>
             </div>
                 {% if main.sub_topics.all %}
                     <ul>
@@ -52,8 +52,8 @@
                             <hr>
                             <li class="d-flex align-items-center gap-4">
                                 <a href="{% url 'lecture:lecture_start' sub.id %}">・{{ sub.title }}/</a>
-                                <a href="{% url 'exam:mcq_for_sub_topic' sub.id %}" class="btn btn-sm btn-success">MCQ</a>
-                                <a href="#" class="btn btn-sm btn-warning">WT</a>
+                                <a href="{% url 'exam:start_per_question_exam' exam_type='mcq_sub' topic_id=sub.id %}" class="btn btn-sm btn-success">MCQ</a>
+                                <a href="{% url 'exam:start_per_question_exam' exam_type='wt_sub' topic_id=sub.id %}" class="btn btn-sm btn-warning">WT</a>
                             </li>                     
                         {% endfor %}
                     </ul>

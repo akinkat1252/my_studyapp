@@ -5,38 +5,57 @@ from django.views import View, generic
 
 from task_management.models import LearningMainTopic, LearningSubTopic
 
-from .models import ExamEvaluation, ExamSession
+from exam.models import ExamEvaluation, ExamSession, ExamType
+from exam.services import (
+    create_new_exam_session,
+    get_rubric_schema
+)
 
 
-# Create your views here.
-class MultipleChoiceQuizView(LoginRequiredMixin, View):
-    template_name = "exam/exam.html"
-    format_text = "Multiple Choice Quiz"
-
-    def get(self, request, topic_id):
-        url_name = request.resolver_match.url_name
-
-        if "main" in url_name:
-            topic_obj = get_object_or_404(
-                LearningMainTopic,
-                user=request.user,
-                id=topic_id,
-            )
-            topic_filter = {"main_topic": topic_obj}
-        elif "sub" in url_name:
-            topic_obj = get_object_or_404(
-                LearningSubTopic,
-                user=request.user,
-                id=topic_id,
-            )
-            topic_filter = {"sub_topic": topic_obj}
-        else:
-            raise ValueError("The URL name does not contain 'main' or 'sub''.")
-        
-
+# Exam Type: Per Question (One question at a time)
+class PerQuestionExamStartView(LoginRequiredMixin, View):
+    def get(self, request, exam_type, topic_id):
+        # Create a new exam session
+        # session = create_new_exam_session(user=request.user, exam_type=exam_type, topic_id=topic_id)
+        # if session.exam_type.scoring_method == "rubric":
+        #     rubric_schema = get_rubric_schema(session=session)
         context = {
-            "format": self.format_text,
-            "title": topic_obj.title,
+            "session": "session",  # Replace with actual session object
+            "exam_type": "exam_type",  # Replace with actual exam type
+            "current_topic_title": "Current Topic Title",  # Replace with actual topic title
         }
+        context["rubric_schema"] = "rubric_schema"  # Replace with actual rubric schema if applicable
 
-        return render(request, self.template_name, context)
+        return render(request, "exam/exam.html", context)
+
+class PerQuestionExamNextView(LoginRequiredMixin, View):
+    def post(self, request, session_id):
+        # Logic to handle answer submission and return next question
+        pass
+
+class PerQuestionExamEndView(LoginRequiredMixin, View):
+    def post(self, request, session_id):
+        # Logic to finalize the exam and show results
+        pass
+
+
+# Exam Type: Batch (All questions at once)
+class BatchExamStartView(LoginRequiredMixin, View):
+    def get(self, request, exam_type, topic_id):
+        # session = create_new_exam_session(user=request.user, exam_type=exam_type, topic=topic)
+        context = {
+            "session": "session",  # Replace with actual session object
+            "exam_type": "exam_type",  # Replace with actual exam type
+            "current_topic_title": "Current Topic Title",  # Replace with actual topic title
+        }
+        return render(request, "exam/exam.html", context)
+
+class BatchExamNextView(LoginRequiredMixin, View):
+    def post(self, request, session_id):
+        # Logic to handle answer submission and return results
+        pass
+
+class BatchExamEndView(LoginRequiredMixin, View):
+    def post(self, request, session_id):
+        # Logic to finalize the exam and show results
+        pass
