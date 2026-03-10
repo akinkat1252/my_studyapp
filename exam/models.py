@@ -6,6 +6,7 @@ from django.db import models, transaction
 from django.db.models import Max, Q, Sum
 
 from config import settings_common
+from exam.managers import ExamTypeManager
 
 
 # Create your models here.
@@ -39,6 +40,8 @@ class ExamType(models.Model):
 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ExamTypeManager()
 
     class Meta:
         indexes = [
@@ -220,6 +223,10 @@ class ExamSession(models.Model):
         return self.calculated_total_score / max_score
 
 
+    @property
+    def target(self):
+        return self.learning_goal or self.main_topic or self.sub_topic
+    
     def __str__(self):
         if self.learning_goal:
             target = f"goal:{self.learning_goal.id}"
