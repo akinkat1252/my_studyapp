@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+
+{% block title %}Your email has been sent | My-Studyapp{% endblock title %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class='container'>
+    <div class='my-div-style'>
+        <div>
+            <h1 class='mb-5'>Please check your email address</h1>
+            <p class='mb-5'>A confirmation email has been sent. Please click the link in the email to complete your user registration. If you have not received the confirmation email, please check your spam folder.</p>
+        </div>
+    </div>
+</div>
+{% endblock content %}

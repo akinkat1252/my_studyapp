@@ -1,0 +1,3 @@
+Thank you for registering.
+To continue, please click the link below.
+{{ activate_url }}

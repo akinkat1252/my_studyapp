@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Set Learning goal | My-Studyapp{% endblock title %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="my-div-style">
+        <div>
+            <h1 class="mb-4">Set Learning Goal &lt; Category:{{ interest_category.name }}&gt;</h1>
+        </div>
+        {% crispy form %}
+    </div>
+</div>
+{% endblock content %}

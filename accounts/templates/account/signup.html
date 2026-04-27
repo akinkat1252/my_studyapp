@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+
+{% block title %}Sign Up | My-Studyapp{% endblock title %}
+{% block active_signup %}active{% endblock active_signup %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container d-flex justify-content-center">
+    <div class="my-div-style">
+        <div>
+            <h1 class="mb-4">Creating an Account</h1><br>
+        </div>
+        <form method="POST"  action="{% url 'account_signup' %}">
+            {% csrf_token %}
+
+            {% bootstrap_form form %}
+            
+            {% if redirect_field_value %}
+                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+            {% endif %}
+            <button type="submit" class="btn btn-primary w-100 mt-4 mb-5">SIGNUP</button>
+        </form>
+    </div>
+</div>
+{% endblock content %}

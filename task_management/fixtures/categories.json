@@ -1,0 +1,142 @@
+[
+    {
+        "model": "task_management.category",
+        "pk": 1,
+        "fields": {
+            "name": "Programming"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 2,
+        "fields": {
+            "name": "Languages"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 3,
+        "fields": {
+            "name": "Mathematics"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 4,
+        "fields": {
+            "name": "Physics"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 5,
+        "fields": {
+            "name": "Chemistry"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 6,
+        "fields": {
+            "name": "Biology"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 7,
+        "fields": {
+            "name": "History"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 8,
+        "fields": {
+            "name": "Philosophy"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 9,
+        "fields": {
+            "name": "Psychology"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 10,
+        "fields": {
+            "name": "Medicine"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 11,
+        "fields": {
+            "name": "Economics"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 12,
+        "fields": {
+            "name": "Finance"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 13,
+        "fields": {
+            "name": "Law"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 14,
+        "fields": {
+            "name": "Engineering"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 15,
+        "fields": {
+            "name": "Geography"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 16,
+        "fields": {
+            "name": "Literature"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 17,
+        "fields": {
+            "name": "Business"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 18,
+        "fields": {
+            "name": "Marketing"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 19,
+        "fields": {
+            "name": "Art"
+        }
+    },
+    {
+        "model": "task_management.category",
+        "pk": 20,
+        "fields": {
+            "name": "Health & Fitness"
+        }
+    }
+]

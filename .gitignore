@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pot
+*.so
+
+.Python
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+/media/
+
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+
+# mypy / type checking
+.mypy_cache/
+.dmypy.json
+
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+# OS
+.DS_Store
+Thumbs.db
+
+
+# Logs
+logs/
+*.log
+!logs/.gitkeep
+
+
+# Backup / local notes
+backup/
+dev_notes/
+
+
+# Jupyter
+.ipynb_checkpoints/
+
+
+# Docker
+*.pid
+*.sock
+docker-compose.override.yml
+
+
+# Security / secrets
+*.pem
+*.key
+*.crt

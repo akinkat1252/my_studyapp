@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Lecture | My-Studyapp{% endblock title %}
+{% block body_class %}White-page{% endblock body_class %}
+
+{% block content %}
+<div class="container">
+    <div class="my-div-style">
+        <div>
+            <h1>Lecture by AI ~ goal: {{ session.sub_topic.main_topic.learning_goal.title }} ~</h1>
+            <h3>&lt; Topic: {{ session.sub_topic.title }} &gt;</h3>
+
+            {% if current_topic_title %}
+                <h5 class="text-muted mt-3">
+                    Current topic: {{ current_topic_title }}
+                </h5>
+            {% endif %}
+
+            <p class="mt-5">
+                We will start the lecture on <strong>{{ session.sub_topic.title }}</strong>.
+            </p>
+            <p>This lectures will cover the following topics in order.</p>
+        </div>
+
+        <!-- Dismissible explanatory message -->
+        <div class="alert alert-secondary alert-dismissible fade show py-2" role="alert" style="font-size: 0.85rem;">
+            <div>
+                <p class="mb-0">&lt; Button Guide &gt;</p>
+                <p><button class="btn btn-sm btn-primary">Next</button> : Go to the next topic.</p>
+                <p><button class="btn btn-sm btn-info">Send</button> : Ask questions or make inquiries at any time.</p>
+                <p><button class="btn btn-sm btn-secondary">End</button> : End the lecture at any time.</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div id="chat-box" class="chat-box mb-3 border rounded p-3" style="max-height: 500px; overflow-y: auto;">
+            <div class="d-flex justify-content-start mb-3">
+                <div class="d-flex align-items-start">
+                    <span class="badge bg-success me-2">AI</span>
+                    <div class="bg-white border p-2 rounded">
+                        {{ outline|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="chat-form" 
+            data-chat-url="{% url 'lecture:chat' session.id %}" 
+            data-next-topic-url="{% url 'lecture:next_topic' session.id %}" 
+            data-end-lecture-url="{% url 'lecture:end_lecture' session.id %}" action="">
+            {% csrf_token %}
+            <textarea id="user-input" name="user_input" class="form-control mb-2" rows="3" placeholder="Your response..."></textarea>
+            <div>
+                <div class="d-flex gap-2">
+                    <button id="send-button" type="submit" class="btn btn-info mb-5">Send</button>
+                    <button id="next-topic" type="button" class="btn btn-primary mb-5">Next</button>
+                    <button id="end-lecture" type="button" class="btn btn-secondary mb-5">End</button>
+                </div>
+            </div>
+        </form>
+        
+    </div>
+</div>
+<script src="{% static 'js/lecture_chat.js' %}"></script>
+{% endblock content %}

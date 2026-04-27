@@ -1,0 +1,17 @@
+footer {
+    margin-top: auto;
+}
+
+.my-div-style {
+    margin-top: 6rem;
+}
+
+/* White background pages */
+body.white-page #mainNav .nav-link,
+body.white-page #mainNav .navbar-brand {
+    color: #000 !important;
+}
+body.white-page #mainNav.navbar-shrink .nav-link,
+body.white-page #mainNav.navbar-shrink .navbar-brand {
+    color: #333 !important;
+}
