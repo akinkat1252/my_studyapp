@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+
+{% block title %}Log Out | My-Studyapp{% endblock title %}
+{% block active_logout %}active{% endblock active_logout %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container d-flex">
+    <div class="my-div-style">
+        <div>
+            <h1>Log Out</h1>
+            <p>Are you sure you want to logout?</p>
+        </div>
+        <form action="{% url 'account_logout' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary mt-4 mb-5" >LOGOUT</button>
+        </form>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Exam | My-Studyapp{% endblock title %}
+{% block body_class %}white-page{% endblock body_class %}
+
+{% block content %}
+<div class="container">
+    <div class="my-div-style">
+        <div>
+            <h1>Exam: {{ exam_type }}</h1>
+            <h3 class="text-muted mt-3">&lt; Topic: {{ current_topic_title }}&gt;</h3>
+
+            <p class="mt-5">
+                We will start the exam on <strong>"{{ current_topic_title }}"</strong>.
+            </p>
+        </div>
+
+        <!-- Dismissible explanatory message -->
+        <div class="alert alert-secondary alert-dismissible fade show py-2" role="alert" style="font-size: 0.85rem;">
+            <div>
+                <p class="mb-0">&lt; Button Guide &gt;</p>
+                <p><button class="btn btn-sm btn-primary">Send</button> : Submit your answer.</p>
+                <p><button class="btn btn-sm btn-info">Next</button> : Submit the answer blank and continue.</p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <div>
+            {% if rubric_schema %}
+                <p>Evaluation Rubric</p>
+                <p>Before starting the exam, please review the rubric below.
+                Your responses will be evaluated based on these criteria.</p>
+                <div class="border rounded p-3 mb-4" style="background-color: #f8f9fa;">
+                    {{ rubric_schema|safe }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div id="chat-box" class="chat-box mb-3 border rounded p-3" style="max-height: 500px; overflow-y: auto;">
+            <div class="d-flex justify-content-start mb-3">
+                <div class="d-flex align-items-start">
+                    <span class="badge bg-success me-2">AI</span>
+                    <div class="bg-white border p-2 rounded">
+                        {{ outline|safe }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% with
+            next_url="exam:next_"|add:flow_type|add:"_exam"
+            end_url="exam:end_"|add:flow_type|add:"_exam"
+        %}
+        <form 
+            id="chat-form" 
+            data-send-url="{% url next_url session_id=session_id %}" 
+            data-next-url="{% url next_url session_id=session_id %}" 
+            data-end-url="{% url end_url session_id=session_id %}"
+            action="{% url next_url session_id=session_id %}">
+            {% csrf_token %}
+            <textarea 
+                id="user-input"
+                name="user_input"
+                class="form-control mb-2"
+                rows="3"
+                placeholder="Your response..."></textarea>
+            <div>
+                <div class="d-flex gap-2">
+                    <button 
+                        id="submit"
+                        name="action"
+                        value="submit"
+                        type="submit"
+                        class="btn btn-primary mb-5">
+                        Submit
+                    </button>
+
+                    {% if not completed %}
+                        <button 
+                            id="next"
+                            name="action"
+                            value="next" 
+                            type="button" 
+                            class="btn btn-info mb-5">
+                            Next
+                        </button>
+                    {% else %}
+                        <button 
+                            id="end"
+                            name="action"
+                            value="end"
+                            type="button" 
+                            class="btn btn-secondary mb-5">
+                            End
+                        </button>
+                    {% endif %}
+
+                </div>
+            </div>
+        </form>
+        {% endwith %}
+        
+    </div>
+</div>
+<script src="{% static 'js/exam_chat.js' %}"></script>
+{% endblock content %}
